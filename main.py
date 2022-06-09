@@ -31,8 +31,6 @@ def getFileData(path):
 def structureData(rawdata):
     objectDict = {}
     for i in range(len(rawdata)):
-        before = []
-        bef_pos_start = []
         current = rawdata[i].split(',')
         type = current[0].split(':')[0]
         num = current[0].split(':')[1]
@@ -40,28 +38,48 @@ def structureData(rawdata):
         cur_pos_start = current[3]
         cur_pos_end = current[4]
 
-        if i > 0:
-            before = rawdata[i-1].split(',')
-            bef_pos_start = before[3] 
-            bef_pos_end = before[4]
+#if type == 'SID':
+#    print(rawdata[i])
+#    if 'RW' in cur_pos_start:
+#        if num == "010":
+#            objectDict[procedure] = cur_pos_start+' '+cur_pos_end
+#        else:
+#            objectDict[procedure] += ' ' + cur_pos_end 
+#
+#    else:
+#        if num == "010":
+#            objectDict[procedure] = objectDict[procedure].replace('  ','')
+#            objectDict[procedure+'-'+cur_pos_start] = objectDict[procedure]
+#        else:
+#            objectDict[procedure+'-'+cur_pos_start] += ' ' + cur_pos_end  
+#
+        if num == "010":
+            objectDict[procedure+'-'+cur_pos_start] = cur_pos_end.replace('  ','') 
+        else:
+            objectDict[procedure+'-'+cur_pos_start] += ' ' + cur_pos_end.replace('  ','')
 
-        if type == 'SID':
-            if 'RW' in cur_pos_start:
-                if num == "010":
-                    objectDict[procedure] = cur_pos_start+' '+cur_pos_end
-                else:
-                    objectDict[procedure] += ' ' + cur_pos_end 
-
-            else:
-                if num == "010":
-                    objectDict[procedure] = objectDict[procedure].replace('  ','')
-                    objectDict[procedure+'-'+cur_pos_start] = objectDict[procedure]
-                else:
-                    objectDict[procedure+'-'+cur_pos_start] += ' ' + cur_pos_end  
-        elif type == 'STAR':
-            print(current)
-
+    cleanDictionary(objectDict,type)
     return objectDict
+
+
+def cleanDictionary(dict,type):
+    listToDelete = []
+    for i in dict:
+        splitName = i.split('-')
+        if len(splitName) > 1:
+            if 'RW' in splitName[1]:
+                listToDelete.append(i)
+                for x in dict:
+                    if splitName[0] in x and 'RW' not in x:
+                        if type == "SID":
+                            dict[x] = '['+splitName[1] +'] '+dict[i].replace('  ','')  +' | '+ dict[x]
+                        elif type == "STAR":
+                            dict[x] = dict[x] +' | '+ dict[i] + ' ['+splitName[1] +']'
+
+    #Cleaning final Dictionary
+    for item in listToDelete:
+        del dict[item]
+
 
 def searchInDict(dict,value):
     for i in dict:
@@ -81,15 +99,24 @@ def main():
     try:
         fix = sys.argv[3].upper()
     except:
-        print()
+        fix = None
     if sys.argv[1].upper() == 'SID':
-        searchInDict(structureData(sids),fix)
+        if fix is None:
+            print(structureData(sids))
+        else:
+            searchInDict(structureData(sids),fix)
     
     elif sys.argv[1].upper() == 'STAR':
-        for item in structureData(stars):
-            print(item)
+        if fix is None:
+            print(structureData(stars))
+        else:
+            searchInDict(structureData(stars),fix)
+
     elif sys.argv[1].upper() == 'METAR':
         getMetar(icao)
+
+    else:
+        print('Command not found!')
 
 if __name__ == "__main__":
     main()
