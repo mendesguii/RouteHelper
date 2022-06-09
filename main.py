@@ -70,7 +70,7 @@ def cleanDictionary(dict,type):
 
 def searchInDict(dict,value):
     for i in dict:
-        if value in dict[i]:
+        if value in dict[i] or value in i:
             print('Chart: '+ i +' || Route: '+dict[i])
 
 def getMetar(icao):
