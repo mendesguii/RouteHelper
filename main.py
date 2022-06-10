@@ -79,21 +79,41 @@ def getMetar(icao):
     soup = soup.code.text
     print('Metar: '+ soup)
 
+def getRoute(icao,icaoDest,minalt,maxalt,cycle):
+    headers = {
+   'id1': icao.upper(),
+   'ic1': '',
+   'id2': icaoDest.upper(),
+   'ic2': '',
+   'minalt': 'FL'+minalt,
+   'maxalt': 'FL'+maxalt,
+   'lvl': 'B',
+   'dbid': cycle,
+   'usesid': 'Y',
+   'usestar': 'Y',
+   'easet': 'Y',
+   'rnav': 'Y',
+   'nats': 'R'} 
+    r = requests.post('http://rfinder.asalink.net/free/autoroute_rtx.php',data = headers)
+    soup = bs (r.text,'html5lib')
+    route = soup.findAll('tt')[1].text
+    print('Route: '+route)
 
 def main():
     icao = sys.argv[1].upper()
-    getFileData('CIFP/'+icao+'.dat')
     try:
         fix = sys.argv[3].upper()
     except:
         fix = None
     if sys.argv[2].upper() == 'SID':
+        getFileData('CIFP/'+icao+'.dat')
         if fix is None:
             print(structureData(sids))
         else:
             searchInDict(structureData(sids),fix)
     
     elif sys.argv[2].upper() == 'STAR':
+        getFileData('CIFP/'+icao+'.dat')
         if fix is None:
             print(structureData(stars))
         else:
@@ -101,6 +121,10 @@ def main():
 
     elif sys.argv[2].upper() == 'METAR':
         getMetar(icao)
+
+    elif sys.argv[2].upper() == 'ROUTE':
+        icaos = icao.split('/')
+        getRoute(icaos[0],icaos[1],'330','330',2205)
 
     else:
         print('Command not found!')
