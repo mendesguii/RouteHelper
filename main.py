@@ -2,7 +2,8 @@ import sys
 import requests
 from bs4 import BeautifulSoup as bs 
 import html5lib
-
+plan = None
+route = None
 sids = []
 stars = []
 apps = []
@@ -72,6 +73,7 @@ def searchInDict(dict,value):
         if value in dict[i] or value in i:
             print('Chart: '+ i +' || Route: '+dict[i])
 
+
 def getMetar(icao):
     r = requests.get('https://metar-taf.com/pt/'+icao)
     soup = bs(r.text,'html5lib')
@@ -79,6 +81,9 @@ def getMetar(icao):
     print('Metar: '+ soup)
 
 def getRoute(icao,icaoDest,minalt,maxalt,cycle):
+    global route
+    global plan
+
     headers = {
    'id1': icao.upper(),
    'ic1': '',
@@ -95,15 +100,18 @@ def getRoute(icao,icaoDest,minalt,maxalt,cycle):
    'nats': 'R'} 
     r = requests.post('http://rfinder.asalink.net/free/autoroute_rtx.php',data = headers)
     soup = bs(r.text,'html5lib')
-    route = soup.findAll('tt')[1].text
-    print('Route: '+route)
+    genroute = soup.findAll('tt')[1].text
+    route = genroute.split(' ')[2:-2]
+    plan += 'Route: '+genroute
+
 
 def getFuel(icao,icaoDest,plane):
+    global plan
     headers = {
    'okstart': 1,
-   'EQPT': plane.uppper(),
+   'EQPT': plane.upper(),
    'ORIG': icao.upper(),
-   'DEST': icaoDest.upper,
+   'DEST': icaoDest.upper(),
    'submit': 'LOADSHEET',
    'RULES': 'FARDOM',
    'UNITS': 'METRIC',
@@ -111,42 +119,51 @@ def getFuel(icao,icaoDest,plane):
     r = requests.post('http://fuelplanner.com/index.php',data = headers)
     soup = bs(r.text,'html5lib')
     loadsheet = soup.pre.text.replace('fuelplanner.com | home','').replace('Copyright 2008-2019 by Garen Evans','')
-    print(loadsheet)
+    plan = loadsheet
 
 
 def main():
     icao = sys.argv[1].upper()
+    option = sys.argv[2].upper()
+
     try:
         fix = sys.argv[3].upper()
     except:
         fix = None
-    if sys.argv[2].upper() == 'SID':
+
+   ## SID
+    if option == 'SID':
         getFileData('CIFP/'+icao+'.dat')
         if fix is None:
             print(structureData(sids))
         else:
             searchInDict(structureData(sids),fix)
-    
-    elif sys.argv[2].upper() == 'STAR':
+   ## STAR 
+    elif option == 'STAR':
         getFileData('CIFP/'+icao+'.dat')
         if fix is None:
             print(structureData(stars))
         else:
             searchInDict(structureData(stars),fix)
-
-    elif sys.argv[2].upper() == 'METAR':
+    #METAR
+    elif option == 'METAR':
         getMetar(icao)
 
-    elif sys.argv[2].upper() == 'ROUTE':
+    #ROUTE
+    elif option == 'ROUTE':
         icaos = icao.split('/')
+        getFuel(icaos[0],icaos[1],sys.argv[3])
         getRoute(icaos[0],icaos[1],'330','330',2205)
+        print(plan)
     
-    elif sys.argv[2].upper() == 'FUEL':
-        getFuel()
-
-
     else:
-        print('Command not found!')
+        helptext = """
+        ===================================================================
+        - ICAO (SID/STAR) : Lists all avaliable procedures and its routes
+        - ICAO (SID/STAR) FIX: Search for a fix in all procedures (can also search by name of procedure)
+        - ICAO METAR: Returns METAR of the airport
+        - ICAO/ICAO ROUTE PLANE: List all info for a route (Route,Fuel,SIDS and STARS) and generate a IVAO FlightPlan."""
+        print(helptext)
 
 if __name__ == "__main__":
     main()
