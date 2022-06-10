@@ -121,6 +121,36 @@ def getFuel(icao,icaoDest,plane):
     loadsheet = soup.pre.text.replace('fuelplanner.com | home','').replace('Copyright 2008-2019 by Garen Evans','')
     plan = loadsheet
 
+def genFlightPlan(icao,icaodest,plane):
+    f = open(icao+icaodest+'.fpl', "a")
+    base = """
+[FLIGHTPLAN]
+ID=XXXXXX
+RULES=I
+FLIGHTTYPE=S
+NUMBER=1
+ACTYPE={0}
+WAKECAT=M
+EQUIPMENT=SDFGIRY
+TRANSPONDER=S
+DEPICAO={1}
+DEPTIME=
+SPEEDTYPE=N
+SPEED=
+LEVELTYPE=F
+LEVEL=330
+ROUTE={2}
+DESTICAO={3}
+EET=
+ALTICAO=
+ALTICAO2=
+OTHER=
+ENDURANCE=
+POB=
+""".format(plane,icao,' '.join(route),icaodest)
+    f.write(base)
+    f.close()
+
 
 def main():
     icao = sys.argv[1].upper()
@@ -154,6 +184,7 @@ def main():
         icaos = icao.split('/')
         getFuel(icaos[0],icaos[1],sys.argv[3])
         getRoute(icaos[0],icaos[1],'330','330',2205)
+        genFlightPlan(icaos[0],icaos[1],sys.argv[3])
         print(plan)
     
     else:
