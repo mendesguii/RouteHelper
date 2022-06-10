@@ -1,5 +1,4 @@
 import sys
-
 import requests
 from bs4 import BeautifulSoup as bs 
 import html5lib
@@ -95,9 +94,25 @@ def getRoute(icao,icaoDest,minalt,maxalt,cycle):
    'rnav': 'Y',
    'nats': 'R'} 
     r = requests.post('http://rfinder.asalink.net/free/autoroute_rtx.php',data = headers)
-    soup = bs (r.text,'html5lib')
+    soup = bs(r.text,'html5lib')
     route = soup.findAll('tt')[1].text
     print('Route: '+route)
+
+def getFuel(icao,icaoDest,plane):
+    headers = {
+   'okstart': 1,
+   'EQPT': plane.uppper(),
+   'ORIG': icao.upper(),
+   'DEST': icaoDest.upper,
+   'submit': 'LOADSHEET',
+   'RULES': 'FARDOM',
+   'UNITS': 'METRIC',
+            }
+    r = requests.post('http://fuelplanner.com/index.php',data = headers)
+    soup = bs(r.text,'html5lib')
+    loadsheet = soup.pre.text.replace('fuelplanner.com | home','').replace('Copyright 2008-2019 by Garen Evans','')
+    print(loadsheet)
+
 
 def main():
     icao = sys.argv[1].upper()
@@ -125,6 +140,10 @@ def main():
     elif sys.argv[2].upper() == 'ROUTE':
         icaos = icao.split('/')
         getRoute(icaos[0],icaos[1],'330','330',2205)
+    
+    elif sys.argv[2].upper() == 'FUEL':
+        getFuel()
+
 
     else:
         print('Command not found!')
