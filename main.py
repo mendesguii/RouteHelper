@@ -81,10 +81,14 @@ def searchInDict(dict,value):
 
 
 def getMetar(icao):
+    global plan
     r = requests.get('https://metar-taf.com/pt/'+icao)
     soup = bs(r.text,'html5lib')
-    soup = soup.code.text
-    print('Metar: '+ soup)
+    metar = soup.code.text
+    if plan is not None:
+         plan += '\n' + '- Metar '+ icao + ': '+ metar
+    else:
+        print('Metar: '+ metar)
 
 def getRoute(icao,icaoDest,minalt,maxalt,cycle):
     global route
@@ -108,7 +112,7 @@ def getRoute(icao,icaoDest,minalt,maxalt,cycle):
     soup = bs(r.text,'html5lib')
     genroute = soup.findAll('tt')[1].text
     route = genroute.split(' ')[2:-2]
-    plan += 'Route: '+genroute
+    plan += '- Route: '+genroute + '\n'
 
 
 def getFuel(icao,icaoDest,plane):
@@ -199,6 +203,10 @@ def main():
         getFuel(icaos[0],icaos[1],sys.argv[3])
         getRoute(icaos[0],icaos[1],'330','330',2205)
         genFlightPlan(icaos[0],icaos[1],sys.argv[3])
+
+        #Metar Both Airports
+        getMetar(icaos[0])
+        getMetar(icaos[1])
         
         #Search first icao SID
         getFileData('CIFP/'+icaos[0]+'.dat')
