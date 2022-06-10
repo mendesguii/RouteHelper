@@ -69,9 +69,15 @@ def cleanDictionary(dict,type):
 
 
 def searchInDict(dict,value):
+    global plan
+    if plan is not None:
+        plan += '\n\n' + '- Fix Search: '+value
     for i in dict:
         if value in dict[i] or value in i:
-            print('Chart: '+ i +' || Route: '+dict[i])
+            if plan is not None:
+                plan += '\n' + '* Chart: '+ i +' || Route: '+dict[i] 
+            else:
+                print(' * Chart: '+ i +' || Route: '+dict[i])
 
 
 def getMetar(icao):
@@ -121,10 +127,18 @@ def getFuel(icao,icaoDest,plane):
     loadsheet = soup.pre.text.replace('fuelplanner.com | home','').replace('Copyright 2008-2019 by Garen Evans','')
     plan = loadsheet
 
+
+def getInfoAfter(word,string):
+    start = string.find(word)
+    end = start+len(word)
+    return string[end+1:end+6]
+
+
 def genFlightPlan(icao,icaodest,plane):
-    f = open(icao+icaodest+'.fpl', "a")
-    base = """
-[FLIGHTPLAN]
+    f = open(icao+icaodest+'.fpl', "w")
+    eet = getInfoAfter('SI BLOCK TIME',plan).replace(':','')
+    endu = getInfoAfter('TIME TO EMPTY',plan).replace(':','')
+    base = """[FLIGHTPLAN]
 ID=XXXXXX
 RULES=I
 FLIGHTTYPE=S
@@ -141,13 +155,13 @@ LEVELTYPE=F
 LEVEL=330
 ROUTE={2}
 DESTICAO={3}
-EET=
+EET={4}
 ALTICAO=
 ALTICAO2=
 OTHER=
-ENDURANCE=
+ENDURANCE={5}
 POB=
-""".format(plane,icao,' '.join(route),icaodest)
+""".format(plane,icao,' '.join(route),icaodest,eet,endu)
     f.write(base)
     f.close()
 
@@ -185,8 +199,16 @@ def main():
         getFuel(icaos[0],icaos[1],sys.argv[3])
         getRoute(icaos[0],icaos[1],'330','330',2205)
         genFlightPlan(icaos[0],icaos[1],sys.argv[3])
-        print(plan)
-    
+        
+        #Search first icao SID
+        getFileData('CIFP/'+icaos[0]+'.dat')
+        searchInDict(structureData(sids),route[0])
+        
+        #Search Dest icao STAR
+        getFileData('CIFP/'+icaos[1]+'.dat')
+        searchInDict(structureData(stars),route[len(route) - 1])
+        
+        print(plan) 
     else:
         helptext = """
         ===================================================================
