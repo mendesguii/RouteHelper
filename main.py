@@ -2,6 +2,8 @@ import sys
 import requests
 from bs4 import BeautifulSoup as bs 
 import html5lib
+from datetime import datetime
+
 plan = None
 route = None
 sids = []
@@ -142,6 +144,7 @@ def genFlightPlan(icao,icaodest,plane):
     f = open(icao+icaodest+'.fpl', "w")
     eet = getInfoAfter('SI BLOCK TIME',plan).replace(':','')
     endu = getInfoAfter('TIME TO EMPTY',plan).replace(':','')
+    dof = 'DOF/'+datetime.today().strftime('%y%m%d')
     base = """[FLIGHTPLAN]
 ID=XXXXXX
 RULES=I
@@ -162,10 +165,10 @@ DESTICAO={3}
 EET={4}
 ALTICAO=
 ALTICAO2=
-OTHER=
-ENDURANCE={5}
+OTHER={5}
+ENDURANCE={6}
 POB=
-""".format(plane,icao,' '.join(route),icaodest,eet,endu)
+""".format(plane,icao,' '.join(route),icaodest,eet,dof,endu)
     f.write(base)
     f.close()
 
