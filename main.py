@@ -1,8 +1,10 @@
 import sys
 import requests
-from bs4 import BeautifulSoup as bs 
 import html5lib
+import yaml
+from bs4 import BeautifulSoup as bs 
 from datetime import datetime
+
 
 plan = None
 route = None
@@ -10,6 +12,13 @@ sids = []
 stars = []
 apps = []
 rwys = []
+path = None
+
+def getConfig():
+    global path
+    configFile = open('config.yaml','r')
+    config = yaml.load(configFile,Loader=yaml.FullLoader)
+    path = config['path']
 
 def getFileData(path):
     global sids
@@ -43,7 +52,10 @@ def structureData(rawdata):
         if num == "010":
             objectDict[procedure+'-'+cur_pos_start] = cur_pos_end.replace('  ','') 
         else:
-            objectDict[procedure+'-'+cur_pos_start] += ' ' + cur_pos_end.replace('  ','')
+            try:
+                objectDict[procedure+'-'+cur_pos_start] += ' ' + cur_pos_end.replace('  ','')
+            except:
+                objectDict[procedure+'-'+cur_pos_start] = cur_pos_end.replace('  ','')
 
     if len(rawdata) >= 1:
        cleanDictionary(objectDict,type)
@@ -174,60 +186,64 @@ POB=
 
 
 def main():
-    icao = sys.argv[1].upper()
-    option = sys.argv[2].upper()
-
     try:
-        fix = sys.argv[3].upper()
+        getConfig()
+        icao = sys.argv[1].upper()
+        option = sys.argv[2].upper()
+        try:
+            fix = sys.argv[3].upper()
+        except:
+            fix = None
+
+       #SID
+        if option == 'SID':
+            getFileData(path+'/'+icao+'.dat')
+            if fix is None:
+                print(structureData(sids))
+            else:
+                searchInDict(structureData(sids),fix)
+       #STAR 
+        elif option == 'STAR':
+            getFileData(path+'/'+icao+'.dat')
+            if fix is None:
+                print(structureData(stars))
+            else:
+                searchInDict(structureData(stars),fix)
+        #METAR
+        elif option == 'METAR':
+            getMetar(icao)
+
+        #ROUTE
+        elif option == 'ROUTE':
+            icaos = icao.split('/')
+            getFuel(icaos[0],icaos[1],sys.argv[3])
+            getRoute(icaos[0],icaos[1],'330','330',2205)
+            genFlightPlan(icaos[0],icaos[1],sys.argv[3])
+
+            #Metar Both Airports
+            getMetar(icaos[0])
+            getMetar(icaos[1])
+            
+            #Search first ICAO SID
+            getFileData(path+'/'+icaos[0]+'.dat')
+            searchInDict(structureData(sids),route[0])
+            
+            #Search Dest ICAO STAR
+            getFileData(path+'/'+icaos[1]+'.dat')
+            searchInDict(structureData(stars),route[len(route) - 1])
+            
+            print(plan)
     except:
-        fix = None
-
-   ## SID
-    if option == 'SID':
-        getFileData('CIFP/'+icao+'.dat')
-        if fix is None:
-            print(structureData(sids))
-        else:
-            searchInDict(structureData(sids),fix)
-   ## STAR 
-    elif option == 'STAR':
-        getFileData('CIFP/'+icao+'.dat')
-        if fix is None:
-            print(structureData(stars))
-        else:
-            searchInDict(structureData(stars),fix)
-    #METAR
-    elif option == 'METAR':
-        getMetar(icao)
-
-    #ROUTE
-    elif option == 'ROUTE':
-        icaos = icao.split('/')
-        getFuel(icaos[0],icaos[1],sys.argv[3])
-        getRoute(icaos[0],icaos[1],'330','330',2205)
-        genFlightPlan(icaos[0],icaos[1],sys.argv[3])
-
-        #Metar Both Airports
-        getMetar(icaos[0])
-        getMetar(icaos[1])
+        print("""
+                                                ~ UNKNOWN COMMAND ~
+                                                
+        ======================================= AVALIABLE COMMANDS =====================================
         
-        #Search first icao SID
-        getFileData('CIFP/'+icaos[0]+'.dat')
-        searchInDict(structureData(sids),route[0])
-        
-        #Search Dest icao STAR
-        getFileData('CIFP/'+icaos[1]+'.dat')
-        searchInDict(structureData(stars),route[len(route) - 1])
-        
-        print(plan) 
-    else:
-        helptext = """
-        ===================================================================
         - ICAO (SID/STAR) : Lists all avaliable procedures and its routes
         - ICAO (SID/STAR) FIX: Search for a fix in all procedures (can also search by name of procedure)
         - ICAO METAR: Returns METAR of the airport
-        - ICAO/ICAO ROUTE PLANE: List all info for a route (Route,Fuel,SIDS and STARS) and generate a IVAO FlightPlan."""
-        print(helptext)
+        - ICAO/ICAO ROUTE PLANE: List all info for a route (Route,Fuel,SIDS and STARS)
+        and generate a IVAO FlightPlan.""")
 
 if __name__ == "__main__":
     main()
