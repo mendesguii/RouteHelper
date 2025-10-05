@@ -1,4 +1,4 @@
 requests
 html5lib
-yaml
 bs4
+python-dotenv

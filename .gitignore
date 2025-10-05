@@ -1,6 +1,8 @@
-CIFP/
+*.env
 *.dat
 *.txt
 *.json
 *.index
 *.fpl
+__pycache__/
+flights/
