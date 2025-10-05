@@ -6,3 +6,6 @@
 *.fpl
 __pycache__/
 flights/
+*venv/
+build/
+dist/
