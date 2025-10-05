@@ -7,13 +7,17 @@ from datetime import datetime
 from dotenv import load_dotenv, set_key
 
 
-
 class RouteHelper:
     """Class to encapsulate route planning logic and state."""
     def __init__(self, env_path='.env'):
         self.ensure_env(env_path)
         load_dotenv(env_path)
         self.data_path = os.getenv('DATA_PATH', '.')
+        # AIRAC cycle for rfinder DB; default to 2501 if not set
+        try:
+            self.cycle = int(os.getenv('CYCLE', '2501'))
+        except ValueError:
+            self.cycle = 2501
         self.sids = []
         self.stars = []
         self.apps = []
@@ -25,9 +29,24 @@ class RouteHelper:
     @staticmethod
     def ensure_env(env_path):
         if not os.path.exists(env_path):
-            # Create .env with a default DATA_PATH
+            # Create .env with default values
             with open(env_path, 'w', encoding='utf-8') as f:
                 f.write('DATA_PATH=.' + '\n')
+                f.write('CYCLE=2501' + '\n')
+        else:
+            # Ensure required keys exist
+            with open(env_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            changed = False
+            if 'DATA_PATH=' not in content:
+                content += ('\n' if not content.endswith('\n') else '') + 'DATA_PATH=.' + '\n'
+                changed = True
+            if 'CYCLE=' not in content:
+                content += ('\n' if not content.endswith('\n') else '') + 'CYCLE=2501' + '\n'
+                changed = True
+            if changed:
+                with open(env_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
     
     def reset_procedure_lists(self):
         self.sids = []
@@ -166,7 +185,7 @@ class RouteHelper:
         end = start + len(word)
         return string[end + 1:end + 6]
 
-    def gen_flight_plan(self, icao, icao_dest, plane):
+    def gen_flight_plan(self, icao, icao_dest, plane, output_dir='flights'):
         eet = self.get_info_after('SI BLOCK TIME', self.plan).replace(':', '')
         endu = self.get_info_after('TIME TO EMPTY', self.plan).replace(':', '')
         dof = 'DOF/' + datetime.today().strftime('%y%m%d')
@@ -194,7 +213,9 @@ OTHER={dof}
 ENDURANCE={endu}
 POB=
 """
-        with open(f'{icao}{icao_dest}.fpl', 'w', encoding='utf-8') as f:
+        os.makedirs(output_dir, exist_ok=True)
+        out_path = os.path.join(output_dir, f'{icao}{icao_dest}.fpl')
+        with open(out_path, 'w', encoding='utf-8') as f:
             f.write(base)
 
     def run(self, argv):
@@ -225,7 +246,7 @@ POB=
                     raise ValueError('Plane type required for ROUTE')
                 plane = argv[3]
                 self.get_fuel(icaos[0], icaos[1], plane)
-                self.get_route(icaos[0], icaos[1], '330', '330', 2501)
+                self.get_route(icaos[0], icaos[1], '330', '330', self.cycle)
                 self.gen_flight_plan(icaos[0], icaos[1], plane)
                 self.get_metar(icaos[0])
                 self.get_metar(icaos[1])
