@@ -19,6 +19,8 @@ DEFAULT_FL_END = "350"
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
+    helper = RouteHelper()
+    airac = helper.get_airac_info()
     return templates.TemplateResponse(
         "index.html",
         {
@@ -26,6 +28,7 @@ def index(request: Request):
             "aircraft_options": AIRCRAFT_OPTIONS,
             "default_fl_start": DEFAULT_FL_START,
             "default_fl_end": DEFAULT_FL_END,
+            "airac": airac,
         },
     )
 
@@ -37,6 +40,7 @@ def plan_route(request: Request,
                fl_start: str = Form(DEFAULT_FL_START),
                fl_end: str = Form(DEFAULT_FL_END)):
     helper = RouteHelper()
+    airac = helper.get_airac_info()
     # Loadsheet (non-mutating)
     try:
         loadsheet, parsed = helper.fetch_loadsheet(origin, dest, plane)
@@ -49,7 +53,8 @@ def plan_route(request: Request,
     endurance = (parsed.get('times', {}) or {}).get('time_to_empty')
     # Route (non-mutating)
     try:
-        route_list, route_text = helper.fetch_route(origin, dest, fl_start, fl_end, helper.cycle)
+        cycle_val = helper.get_cycle()
+        route_list, route_text = helper.fetch_route(origin, dest, fl_start, fl_end, cycle_val)
     except Exception as e:
         route_list, route_text = ([], f"Error: {e}")
     # SID/STAR (non-mutating inference)
@@ -101,6 +106,7 @@ def plan_route(request: Request,
         "plane": plane,
         "fl_start": fl_start,
         "fl_end": fl_end,
+        "airac": airac,
         "loadsheet": loadsheet,
         "ttl": ttl,
         "tof": tof,

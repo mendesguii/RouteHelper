@@ -6,6 +6,8 @@ import re
 from bs4 import BeautifulSoup
 from typing import Optional
 from dotenv import load_dotenv
+import json
+from datetime import datetime
 
 
 class RouteHelper:
@@ -224,6 +226,62 @@ class RouteHelper:
             if pos:
                 coords.append((pos[0], pos[1], it.upper()))
         return coords
+
+    # -------- AIRAC helpers (cycle.json) --------
+    def read_cycle_json(self) -> Optional[dict]:
+        """Return parsed cycle.json from DATA_PATH if present, else None."""
+        path = os.path.join(self.data_path, 'cycle.json')
+        if not os.path.isfile(path):
+            return None
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return None
+
+    def expected_cycle_str(self) -> str:
+        """Return current cycle in YYMM format from system date."""
+        now = datetime.now()
+        return f"{now.year % 100:02d}{now.month:02d}"
+
+    def is_cycle_current(self, cycle_str: str) -> bool:
+        return (cycle_str or '').strip() == self.expected_cycle_str()
+
+    def get_airac_info(self) -> dict:
+        """Read-only AIRAC info from cycle.json; no writes.
+
+        Returns: {
+          'cycle': str|None,
+          'name': str|None,
+          'revision': str|None,
+          'source': 'json'|'missing',
+          'is_current': bool,
+        }
+        """
+        data = self.read_cycle_json()
+        if not data:
+            return {'cycle': None, 'name': None, 'revision': None, 'source': 'missing', 'is_current': False}
+        cycle = str(data.get('cycle', '')).strip() or None
+        return {
+            'cycle': cycle,
+            'name': data.get('name'),
+            'revision': str(data.get('revision')) if data.get('revision') is not None else None,
+            'source': 'json',
+            'is_current': self.is_cycle_current(cycle or ''),
+        }
+
+    def get_cycle(self) -> int:
+        """Return AIRAC cycle from cycle.json; raise if missing or invalid.
+
+        YYMM is used only for is_current comparison, not as a fallback.
+        """
+        data = self.read_cycle_json()
+        if not data:
+            raise FileNotFoundError("cycle.json not found under DATA_PATH")
+        try:
+            return int(str(data.get('cycle', '')).strip())
+        except Exception as e:
+            raise ValueError("Invalid cycle value in cycle.json") from e
 
     def list_cifp_icaos(self, prefix: str = "", limit: int = 20) -> list[str]:
         """List available ICAO codes from the CIFP directory based on a prefix.
@@ -624,7 +682,7 @@ class RouteHelper:
                     raise ValueError('Plane type required for ROUTE')
                 plane = argv[3]
                 self.get_fuel(icaos[0], icaos[1], plane)
-                self.get_route(icaos[0], icaos[1], '330', '330', self.cycle)
+                self.get_route(icaos[0], icaos[1], '330', '330', self.get_cycle())
                 self.get_metar(icaos[0])
                 self.get_metar(icaos[1])
                 self.get_file_data(icaos[0])

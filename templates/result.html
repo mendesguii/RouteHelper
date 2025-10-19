@@ -1,4 +1,14 @@
 <div class="box">
+            <div class="is-pulled-right is-size-7" title="AIRAC {{ airac.cycle or 'unknown' }} ({{ airac.name or 'X-Plane' }})">
+                    <span>AIRAC: <strong>{{ airac.cycle or 'unknown' }}</strong></span>
+                    {% if airac.cycle and airac.is_current %}
+                    <span style="color:#48c774;" aria-label="Up to date" title="Up to date">✔</span>
+                    {% elif airac.cycle %}
+                    <span style="color:#f14668;" aria-label="Out of date" title="Out of date">✖</span>
+                    {% else %}
+                        <span style="color:#ffdd57;" aria-label="Missing" title="cycle.json not found">?</span>
+                {% endif %}
+        </div>
     <h2 class="subtitle">Loadsheet <span>🧾</span></h2>
     <div class="columns">
         <div class="column">Total Traffic Load (kg): <strong>{{ ttl or 'N/A' }}</strong></div>
@@ -11,7 +21,14 @@
         <pre>{{ loadsheet }}</pre>
     </details>
     <hr>
-    <h2 class="subtitle">Route <span>🗺️</span></h2>
+        <h2 class="subtitle">Route <span>🗺️</span></h2>
+        {% if 'Error:' in route_text and 'cycle.json' in route_text %}
+        <article class="message is-danger">
+            <div class="message-body">
+                {{ route_text }}. Please ensure a valid cycle.json is present under your DATA_PATH.
+            </div>
+        </article>
+        {% endif %}
     <textarea id="route-text" name="items" class="textarea" rows="3">{{ route_text }}</textarea>
     <div class="field" style="margin-top: .5rem;">
         <form hx-post="/route_map" hx-include="#route-text" hx-target="#route-map-container" hx-swap="innerHTML" hx-indicator="#map-loading" class="control">
