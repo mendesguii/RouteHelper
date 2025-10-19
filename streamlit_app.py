@@ -68,25 +68,28 @@ def init_helper():
 
 def page_settings(helper: RouteHelper):
     with st.sidebar:
-        with st.expander("Session settings", expanded=False):
+        with st.form(key="settings_form"):
             data_path = st.text_input("Data Folder (contains .dat)", value=helper.data_path or ".")
             cycle = st.number_input("AIRAC Cycle", min_value=1000, max_value=9999, value=int(getattr(helper, 'cycle', 2501)))
-            if st.button("Apply"):
-                helper.data_path = data_path
-                try:
-                    helper.cycle = int(cycle)
-                except Exception:
-                    helper.cycle = cycle
-                st.success("Applied to this session")
+            apply_settings = st.form_submit_button("Apply", use_container_width=True)
+        if apply_settings:
+            helper.data_path = data_path
+            try:
+                helper.cycle = int(cycle)
+            except Exception:
+                helper.cycle = cycle
+            st.success("Applied to this session")
 
 
 def tab_procedures_metar(helper: RouteHelper):
     st.subheader("Procedures: SID/STAR")
-    c1, c2, c3, c4 = st.columns([1,1,2,1])
-    icao = c1.text_input("ICAO", key="proc_icao").upper().strip()
-    proc_type = c2.selectbox("Type", ["SID", "STAR"], key="proc_type")
-    fix = c3.text_input("Fix (optional)", key="proc_fix").upper().strip()
-    if c4.button("Search", key="proc_search"):
+    with st.form(key="proc_form"):
+        c1, c2, c3 = st.columns([1,1,2])
+        icao = c1.text_input("ICAO", key="proc_icao").upper().strip()
+        proc_type = c2.selectbox("Type", ["SID", "STAR"], key="proc_type")
+        fix = c3.text_input("Fix (optional)", key="proc_fix").upper().strip()
+        search_btn = st.form_submit_button("Search", use_container_width=True)
+    if search_btn:
         if not icao:
             st.warning("Enter an ICAO code.")
         else:
@@ -110,10 +113,12 @@ def tab_procedures_metar(helper: RouteHelper):
                 st.error(f"Error: {e}")
 
     st.markdown("---")
-    st.subheader("METAR")
-    mcol1, mcol2 = st.columns([2,1])
-    metar_icao = mcol1.text_input("ICAO", key="metar_icao").upper().strip()
-    if mcol2.button("Get METAR", key="metar_btn"):
+    st.subheader("METAR ☁️")
+    with st.form(key="metar_form"):
+        col1 = st.columns(1)[0]
+        metar_icao = col1.text_input("ICAO", key="metar_icao").upper().strip()
+        metar_btn = st.form_submit_button("Get METAR", use_container_width=True)
+    if metar_btn:
         if not metar_icao:
             st.warning("Enter an ICAO code.")
         else:
@@ -165,13 +170,16 @@ POB=
 
 def tab_route_planner(helper: RouteHelper):
     st.subheader("Route Planner")
-    r1, r2, r3, r4, r5, r6 = st.columns([1,1,1,1,1,1])
-    origin = r1.text_input("Origin ICAO", key="route_origin").upper().strip()
-    dest = r2.text_input("Destination ICAO", key="route_dest").upper().strip()
-    plane = r3.selectbox("Aircraft", AIRCRAFT_OPTIONS, key="route_plane")
-    fl_start = r4.text_input("FL Start", value=DEFAULT_FL, key="fl_start").strip() or DEFAULT_FL
-    fl_end = r5.text_input("FL End", value=DEFAULT_FL, key="fl_end").strip() or DEFAULT_FL
-    do_plan = r6.button("Plan Route", key="plan_route")
+    with st.form(key="route_form"):
+        col1, col2, col3 = st.columns(3)
+        origin = col1.text_input("Origin ICAO", key="route_origin").upper().strip()
+        dest = col2.text_input("Destination ICAO", key="route_dest").upper().strip()
+        plane = col3.selectbox("Aircraft", AIRCRAFT_OPTIONS, key="route_plane")
+        col4, col5 = st.columns(2)
+        fl_start = col4.text_input("FL Start", value=DEFAULT_FL, key="fl_start").strip() or DEFAULT_FL
+        fl_end = col5.text_input("FL End", value=DEFAULT_FL, key="fl_end").strip() or DEFAULT_FL
+        plan_btn = st.form_submit_button("Plan Route", use_container_width=True)
+    do_plan = plan_btn
 
     if do_plan:
         if not origin or not dest or not plane:
@@ -241,8 +249,10 @@ def tab_route_planner(helper: RouteHelper):
             st.markdown("---")
             ms1, ms2 = st.columns(2)
             with ms1:
-                sid_fix = st.text_input("Search SID Fix", key="sid_fix").upper().strip()
-                if st.button("Search SID", key="sid_search_btn"):
+                with st.form(key="sid_form"):
+                    sid_fix = st.text_input("Search SID Fix", key="sid_fix").upper().strip()
+                    sid_btn = st.form_submit_button("Search SID", use_container_width=True)
+                if sid_btn:
                     try:
                         helper.get_file_data(f'{helper.data_path}/{origin}.dat')
                         helper.plan = ''
@@ -251,8 +261,10 @@ def tab_route_planner(helper: RouteHelper):
                     except Exception as e:
                         st.error(f"Error: {e}")
             with ms2:
-                star_fix = st.text_input("Search STAR Fix", key="star_fix").upper().strip()
-                if st.button("Search STAR", key="star_search_btn"):
+                with st.form(key="star_form"):
+                    star_fix = st.text_input("Search STAR Fix", key="star_fix").upper().strip()
+                    star_btn = st.form_submit_button("Search STAR", use_container_width=True)
+                if star_btn:
                     try:
                         helper.get_file_data(f'{helper.data_path}/{dest}.dat')
                         helper.plan = ''
@@ -262,7 +274,7 @@ def tab_route_planner(helper: RouteHelper):
                         st.error(f"Error: {e}")
 
             # METARs
-            st.markdown("---")
+            st.subheader("METAR ☁️")
             m1, m2 = st.columns(2)
             try:
                 helper.plan = ''
