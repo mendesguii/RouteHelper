@@ -4,6 +4,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from main import RouteHelper
 from datetime import datetime
+import os
+import folium
 
 app = FastAPI()
 
@@ -110,10 +112,92 @@ def plan_route(request: Request,
         "metar_origin": metar_origin,
         "metar_dest": metar_dest,
         "icao_fpl": msg,
+        "route_map": "",
         "aircraft_options": AIRCRAFT_OPTIONS,
         "default_fl_start": DEFAULT_FL_START,
         "default_fl_end": DEFAULT_FL_END,
     })
+
+@app.post("/route_map", response_class=HTMLResponse)
+def route_map(request: Request, items: str = Form(""), origin: str = Form("") , dest: str = Form("")):
+    helper = RouteHelper()
+    seq = [s for s in (items or '').split() if s.strip()]
+    # Get route fix coords via helper and airports via helper
+    coords = helper.get_route_fix_coords(items)
+    apt_coords = helper.load_airport_coords()
+
+    points = []  # for bounds
+    # Build folium map
+    m = folium.Map(location=[0, 0], zoom_start=2, tiles='CartoDB dark_matter')
+
+    # Add route line and fix markers if available
+    if coords:
+        folium.PolyLine([(c[0], c[1]) for c in coords], color='#00c2ff', weight=3, opacity=0.85).add_to(m)
+        for lat, lon, name in coords:
+            folium.CircleMarker(location=[lat, lon], radius=4, color='#00c2ff', fill=True, fill_color='#ffffff', fill_opacity=0.9, popup=name, tooltip=name).add_to(m)
+            # Add a text label centered above the fix marker
+            folium.map.Marker(
+                location=[lat, lon],
+                icon=folium.DivIcon(html=(
+                    f'<div style="position: relative; left: 50%; transform: translate(-50%, -14px);'
+                    f' font-size: 11px; color: #8bd9f8; white-space: nowrap;'
+                    f' text-shadow: 0 0 2px #000, 0 0 3px #000; pointer-events: none;">{name}</div>'
+                ))
+            ).add_to(m)
+            points.append((lat, lon))
+
+    # Add origin/dest airport markers if available
+    o = (apt_coords.get((origin or '').upper()) if origin else None)
+    d = (apt_coords.get((dest or '').upper()) if dest else None)
+    if o:
+        folium.Marker(location=[o[0], o[1]], icon=folium.Icon(color='lightgreen', icon='plane', prefix='fa'), popup=f"{origin.upper()} (Origin)", tooltip=f"{origin.upper()} (Origin)").add_to(m)
+        folium.map.Marker(
+            location=[o[0], o[1]],
+            icon=folium.DivIcon(html=(
+                f'<div style="position: relative; left: 50%; transform: translate(-50%, -16px);'
+                f' font-size: 12px; font-weight: 700; color: #a2f5bf; white-space: nowrap;'
+                f' text-shadow: 0 0 2px #000, 0 0 3px #000; pointer-events: none;">{origin.upper()}</div>'
+            ))
+        ).add_to(m)
+        points.append(o)
+    if d:
+        folium.Marker(location=[d[0], d[1]], icon=folium.Icon(color='orange', icon='flag', prefix='fa'), popup=f"{dest.upper()} (Destination)", tooltip=f"{dest.upper()} (Destination)").add_to(m)
+        folium.map.Marker(
+            location=[d[0], d[1]],
+            icon=folium.DivIcon(html=(
+                f'<div style="position: relative; left: 50%; transform: translate(-50%, -16px);'
+                f' font-size: 12px; font-weight: 700; color: #ffcc80; white-space: nowrap;'
+                f' text-shadow: 0 0 2px #000, 0 0 3px #000; pointer-events: none;">{dest.upper()}</div>'
+            ))
+        ).add_to(m)
+        points.append(d)
+
+    # Connect airports to the route using dashed lines
+    if o and coords:
+        first = coords[0]
+        folium.PolyLine([[o[0], o[1]], [first[0], first[1]]], color='#90a4ae', weight=2, opacity=0.85, dash_array='4,6').add_to(m)
+    if d and coords:
+        last = coords[-1]
+        folium.PolyLine([[last[0], last[1]], [d[0], d[1]]], color='#90a4ae', weight=2, opacity=0.85, dash_array='4,6').add_to(m)
+    # If there are no fixes but we have both airports, connect them dashed
+    if (o and d) and not coords:
+        folium.PolyLine([[o[0], o[1]], [d[0], d[1]]], color='#90a4ae', weight=2, opacity=0.85, dash_array='4,6').add_to(m)
+
+    # Fit map to all points if we have at least one
+    if points:
+        min_lat = min(p[0] for p in points)
+        max_lat = max(p[0] for p in points)
+        min_lon = min(p[1] for p in points)
+        max_lon = max(p[1] for p in points)
+        m.fit_bounds([[min_lat, min_lon], [max_lat, max_lon]], padding=(20, 20))
+
+    html = m.get_root().render()
+    return templates.TemplateResponse("partials/route_map.html", {"request": request, "html": html})
+
+@app.post("/route_map_close", response_class=HTMLResponse)
+def route_map_close():
+    # Returning an empty string clears the container
+    return ""
 
 @app.get("/icao_suggest", response_class=HTMLResponse)
 def icao_suggest(request: Request, q: str = "", origin: str = "", dest: str = "", limit: int = 20, mode: str = "options", input_id: str = "", target_id: str = ""):
@@ -169,8 +253,9 @@ def search_sid(request: Request, origin: str = Form(...), fix: str = Form("")):
     try:
         helper.get_file_data(origin)
         sid_dict = helper.structure_data(helper.sids)
-        if fix:
-            sid_text = helper.search_in_dict_text(sid_dict, fix)
+        q = (fix or "").upper()
+        if q:
+            sid_text = helper.search_in_dict_text(sid_dict, q)
         else:
             # default to listing or last inferred route-based search
             sid_text = helper.search_in_dict_text(sid_dict, "")
@@ -189,8 +274,9 @@ def search_star(request: Request, dest: str = Form(...), fix: str = Form("")):
     try:
         helper.get_file_data(dest)
         star_dict = helper.structure_data(helper.stars)
-        if fix:
-            star_text = helper.search_in_dict_text(star_dict, fix)
+        q = (fix or "").upper()
+        if q:
+            star_text = helper.search_in_dict_text(star_dict, q)
         else:
             star_text = helper.search_in_dict_text(star_dict, "")
     except Exception as e:

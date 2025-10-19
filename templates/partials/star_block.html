@@ -13,7 +13,7 @@
         <form hx-post="/search_star" hx-target="#star-block-{{ dest }}" hx-swap="outerHTML" class="field has-addons">
           <input type="hidden" name="dest" value="{{ dest }}">
           <div class="control">
-            <input class="input is-small" type="text" name="fix" placeholder="Search fix (e.g. VUREP)">
+            <input class="input is-small" type="text" name="fix" placeholder="Search fix (e.g. VUREP)" style="text-transform: uppercase;">
           </div>
           <div class="control">
             <button class="button is-small is-light is-rounded" type="submit" title="Search STAR" aria-label="Search STAR">

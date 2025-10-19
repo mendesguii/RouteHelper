@@ -13,6 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -33,7 +38,7 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/routehelper:latest
 
-      - name: Build Python package (optional)
+      - name: Validate requirements install
         run: |
-          pip install build
-          python -m build .
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt

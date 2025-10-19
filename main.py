@@ -80,6 +80,9 @@ class RouteHelper:
         self.rwys = []
         self.plan = None
         self.route = None
+        # Caches for map lookups
+        self._fix_index = None
+        self._airport_coords = None
 
     # -------- Non-mutating convenience APIs --------
     def fetch_loadsheet(self, origin: str, dest: str, plane: str) -> tuple[str, Optional[dict]]:
@@ -138,6 +141,89 @@ class RouteHelper:
         r = requests.get(f'https://aviationweather.gov/api/data/metar?ids={icao}')
         soup = BeautifulSoup(r.text, 'html5lib')
         return soup.text
+
+    # (map helpers moved to FastAPI layer)
+    # Map data loading helpers (file I/O centralized here)
+    def load_fix_index(self) -> dict:
+        """Load and cache fix coordinates from earth_fix.dat under DATA_PATH.
+
+        Returns a dict mapping FIXNAME -> (lat, lon)
+        """
+        if self._fix_index is not None:
+            return self._fix_index
+        index: dict = {}
+        fix_path = os.path.join(self.data_path, 'earth_fix.dat')
+        try:
+            with open(fix_path, 'r', encoding='utf-8', errors='ignore') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith(';'):
+                        continue
+                    parts = line.split()
+                    if len(parts) < 3:
+                        continue
+                    try:
+                        lat = float(parts[0])
+                        lon = float(parts[1])
+                        name = parts[-1].upper()
+                        if name and name not in index:
+                            index[name] = (lat, lon)
+                    except Exception:
+                        continue
+        except FileNotFoundError:
+            index = {}
+        self._fix_index = index
+        return index
+
+    def load_airport_coords(self) -> dict:
+        """Load and cache airport coordinates from X-Plane metadata files.
+
+        Tries DATA_PATH/earth_aptmeta.dat then DATA_PATH/earth_metadata.dat.
+        Returns a dict mapping ICAO -> (lat, lon)
+        """
+        if self._airport_coords is not None:
+            return self._airport_coords
+        coords: dict = {}
+        meta_candidates = [
+            os.path.join(self.data_path, 'earth_aptmeta.dat'),
+            os.path.join(self.data_path, 'earth_metadata.dat'),
+        ]
+        meta_path = next((p for p in meta_candidates if os.path.isfile(p)), None)
+        if meta_path:
+            try:
+                with open(meta_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith(';'):
+                            continue
+                        parts = line.split()
+                        # Expected: ICAO COUNTRY LAT LON ...
+                        if len(parts) >= 4:
+                            code = parts[0].upper()
+                            try:
+                                lat = float(parts[2])
+                                lon = float(parts[3])
+                                coords[code] = (lat, lon)
+                            except Exception:
+                                continue
+            except Exception:
+                coords = {}
+        self._airport_coords = coords
+        return coords
+
+    def get_route_fix_coords(self, items_text: str) -> list[tuple[float, float, str]]:
+        """Return a list of (lat, lon, name) for items present in the fix index.
+
+        The items_text is a space-separated route string. Unknown tokens are ignored.
+        """
+        index = self.load_fix_index()
+        seq = [s for s in (items_text or '').split() if s.strip()]
+        coords: list[tuple[float, float, str]] = []
+        for it in seq:
+            pos = index.get(it.upper())
+            if pos:
+                coords.append((pos[0], pos[1], it.upper()))
+        return coords
 
     def list_cifp_icaos(self, prefix: str = "", limit: int = 20) -> list[str]:
         """List available ICAO codes from the CIFP directory based on a prefix.

@@ -1,5 +1,8 @@
-requests
-html5lib
-bs4
-python-dotenv
-streamlit
+fastapi>=0.110
+uvicorn[standard]>=0.23
+Jinja2>=3.1
+requests>=2.31
+html5lib>=1.1
+beautifulsoup4>=4.12
+python-dotenv>=1.0
+folium>=0.16

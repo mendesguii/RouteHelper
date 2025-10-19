@@ -12,7 +12,16 @@
     </details>
     <hr>
     <h2 class="subtitle">Route <span>🗺️</span></h2>
-    <textarea class="textarea" readonly rows="3">{{ route_text }}</textarea>
+    <textarea id="route-text" name="items" class="textarea" rows="3">{{ route_text }}</textarea>
+    <div class="field" style="margin-top: .5rem;">
+        <form hx-post="/route_map" hx-include="#route-text" hx-target="#route-map-container" hx-swap="innerHTML" hx-indicator="#map-loading" class="control">
+            <input type="hidden" name="origin" value="{{ origin }}">
+            <input type="hidden" name="dest" value="{{ dest }}">
+            <button class="button is-small is-link" type="submit">Show Route on Map</button>
+            <span id="map-loading" class="htmx-indicator" style="margin-left: .5rem;">Loading map…</span>
+        </form>
+    </div>
+    <div id="route-map-container"></div>
     <div class="columns">
         <div class="column">
             {% include 'partials/sid_block.html' %}

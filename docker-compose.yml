@@ -4,13 +4,10 @@ services:
     build: .
     container_name: routehelper-app
     ports:
-      - "8501:8501"
+      - "8000:8000"
     volumes:
       - ./:/app
     environment:
       - PYTHONUNBUFFERED=1
-      - STREAMLIT_SERVER_HEADLESS=true
-      - STREAMLIT_SERVER_PORT=8501
-      - STREAMLIT_SERVER_ENABLECORS=false
     restart: unless-stopped
 # Add more services (e.g., db, reverse proxy) as needed

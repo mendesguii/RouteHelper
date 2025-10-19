@@ -1,30 +1,57 @@
 # RouteHelper
-CLI and GUI tools to get SID/STARs, plan routes, and fetch METARs. Now includes a Streamlit web UI.
+Plan IFR routes, fetch loadsheets and METARs, and search SIDs/STARs.
+
+Now a FastAPI + HTMX + Bulma web app, with a small CLI for power users.
 
 ## Features
-- Procedures: list/search SIDs and STARs from local .dat files
+- Procedures: list/search SIDs and STARs from local CIFP `.dat` files
 - METAR fetch for any ICAO
-- Route planning via rfinder
+- Route planning via rfinder (with FL range and aircraft type)
 - Loadsheet via fuelplanner (parsed into structured data)
-- Export IVAO FPL (.fpl) and VATSIM (ICAO FPL text)
+- VATSIM ICAO FPL text builder
+- Route map rendering via Folium from `earth_fix.dat`
 
-## Run (CLI)
-Use `main.py` as before.
+## Configuration
+Create a `.env` file (auto-created on first run) and set:
 
-## Run (Desktop GUI)
-Launch `gui.py` for the ttkbootstrap desktop UI.
+```
+DATA_PATH=./Custom Data
+CYCLE=2501
+```
 
-## Run (Streamlit Web UI)
-1. Install deps
-2. Run Streamlit app
+`DATA_PATH` should point to the root containing `CIFP/` and `earth_fix.dat` (or place `.dat` files directly under `DATA_PATH`).
+
+## Run (Web UI)
+
+Install and start the FastAPI app:
 
 ```powershell
 pip install -r requirements.txt
-streamlit run .\streamlit_app.py
+uvicorn main_fastapi:app --host 0.0.0.0 --port 8000
 ```
 
-Configure the data folder and AIRAC in the left sidebar. The Streamlit app mirrors the GUI features:
-- Procedures + METAR tab
-- Route Planner with loadsheet, route, SID/STAR fix searches, METARs
-- Export IVAO FPL and VATSIM ICAO FPL text
+Then open http://localhost:8000 in your browser.
+
+### Run with Docker
+
+```powershell
+docker compose up --build
+```
+
+The app will be available on http://localhost:8000.
+
+## Run (CLI)
+
+Legacy CLI is still available:
+
+```powershell
+python .\main.py EHAM METAR
+python .\main.py EHAM SID VUREP
+python .\main.py EHAM/LEBL ROUTE A320
+```
+
+## Notes
+
+- ICAO suggestions are based on listing `.dat` files under `DATA_PATH/CIFP` (fallback to `DATA_PATH`).
+- The route map uses fixes from `earth_fix.dat` if present.
 

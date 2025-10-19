@@ -17,13 +17,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose Streamlit default port
-EXPOSE 8501
+EXPOSE 8000
 
 # Set environment variables for Streamlit
-ENV PYTHONUNBUFFERED=1 \
-    STREAMLIT_SERVER_HEADLESS=true \
-    STREAMLIT_SERVER_PORT=8501 \
-    STREAMLIT_SERVER_ENABLECORS=false
+ENV PYTHONUNBUFFERED=1
 
 # Entrypoint
-CMD ["streamlit", "run", "streamlit_app.py"]
+CMD ["uvicorn", "main_fastapi:app", "--host", "0.0.0.0", "--port", "8000"]
