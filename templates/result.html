@@ -1,14 +1,4 @@
 <div class="box">
-            <div class="is-pulled-right is-size-7" title="AIRAC {{ airac.cycle or 'unknown' }} ({{ airac.name or 'X-Plane' }})">
-                    <span>AIRAC: <strong>{{ airac.cycle or 'unknown' }}</strong></span>
-                    {% if airac.cycle and airac.is_current %}
-                    <span style="color:#48c774;" aria-label="Up to date" title="Up to date">✔</span>
-                    {% elif airac.cycle %}
-                    <span style="color:#f14668;" aria-label="Out of date" title="Out of date">✖</span>
-                    {% else %}
-                        <span style="color:#ffdd57;" aria-label="Missing" title="cycle.json not found">?</span>
-                {% endif %}
-        </div>
     <h2 class="subtitle">Loadsheet <span>🧾</span></h2>
     <div class="columns">
         <div class="column">Total Traffic Load (kg): <strong>{{ ttl or 'N/A' }}</strong></div>

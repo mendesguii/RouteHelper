@@ -54,6 +54,24 @@
         html.dark a { color: #8ab4f8; }
         /* Placeholder color */
         html.dark ::placeholder { color: #b5b5b5; opacity: 1; }
+        /* Global loading overlay */
+        #loading-overlay.htmx-indicator { display: none; }
+        #loading-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.45);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .loading-card {
+            background: #fff; color: #363636; border-radius: 8px; padding: 1.25rem 1.5rem; box-shadow: 0 8px 28px rgba(10,10,10,0.2);
+            display: flex; align-items: center; gap: .75rem;
+        }
+        .spinner {
+            width: 28px; height: 28px; border-radius: 50%; border: 3px solid #dbdbdb; border-top-color: #485fc7; animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        /* Dark mode for loading card */
+        html.dark .loading-card { background: #1e1e1e; color: #e8e8e8; box-shadow: 0 8px 28px rgba(0,0,0,0.6); }
+        html.dark .spinner { border-color: #3a3a3a; border-top-color: #8ab4f8; }
     </style>
 </head>
 <body>
@@ -78,7 +96,7 @@
                     </button>
                 </div>
     </div>
-    <form id="planner-form" hx-post="/plan" hx-target="#results" hx-swap="innerHTML" class="box">
+    <form id="planner-form" hx-post="/plan" hx-target="#results" hx-swap="innerHTML" hx-indicator="#loading-overlay" class="box">
             <div class="columns">
                 <div class="column">
                     <div class="field">
@@ -163,6 +181,16 @@
         <div id="results"></div>
     </div>
 </section>
+<!-- Global loading overlay shown while planning route -->
+<div id="loading-overlay" class="htmx-indicator" role="status" aria-live="polite" aria-label="Loading">
+    <div class="loading-card">
+        <div class="spinner" aria-hidden="true"></div>
+        <div>
+            <strong>Planning route…</strong>
+            <div class="is-size-7">Please wait</div>
+        </div>
+    </div>
+    </div>
 <script>
     // When the plan completes (htmx afterOnLoad), collapse the planner wrapper
     document.body.addEventListener('htmx:afterOnLoad', function(ev) {
