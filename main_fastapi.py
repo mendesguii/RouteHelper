@@ -125,15 +125,20 @@ def route_map(request: Request, items: str = Form(""), origin: str = Form("") , 
     # Get route fix coords via helper and airports via helper
     coords = helper.get_route_fix_coords(items)
     apt_coords = helper.load_airport_coords()
+    # If route explicitly indicates none, ignore any fixes and render airport-to-airport only
+    route_indicates_none = 'no route generated' in (items or '').lower()
+    if route_indicates_none:
+        coords = []
 
     points = []  # for bounds
     # Build folium map
     m = folium.Map(location=[0, 0], zoom_start=2, tiles='CartoDB dark_matter')
 
     # Add route line and fix markers if available
-    if coords:
+    if len(coords) >= 2:
         folium.PolyLine([(c[0], c[1]) for c in coords], color='#00c2ff', weight=3, opacity=0.85).add_to(m)
-        for lat, lon, name in coords:
+    # Plot fix markers (even if only 1), unknown fixes are already ignored by lookup
+    for lat, lon, name in coords:
             folium.CircleMarker(location=[lat, lon], radius=4, color='#00c2ff', fill=True, fill_color='#ffffff', fill_opacity=0.9, popup=name, tooltip=name).add_to(m)
             # Add a text label centered above the fix marker
             folium.map.Marker(
@@ -179,8 +184,8 @@ def route_map(request: Request, items: str = Form(""), origin: str = Form("") , 
     if d and coords:
         last = coords[-1]
         folium.PolyLine([[last[0], last[1]], [d[0], d[1]]], color='#90a4ae', weight=2, opacity=0.85, dash_array='4,6').add_to(m)
-    # If there are no fixes but we have both airports, connect them dashed
-    if (o and d) and not coords:
+    # Only draw airport-to-airport dashed when route explicitly says "No route generated."
+    if (o and d) and route_indicates_none:
         folium.PolyLine([[o[0], o[1]], [d[0], d[1]]], color='#90a4ae', weight=2, opacity=0.85, dash_array='4,6').add_to(m)
 
     # Fit map to all points if we have at least one
