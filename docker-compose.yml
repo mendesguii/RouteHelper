@@ -1,15 +1,19 @@
 version: '3.8'
 services:
   routehelper:
-    build: .
+    # Use the published image from GitHub Container Registry
+    # Set IMAGE_TAG in your .env to pin a version (default: latest)
+    image: ghcr.io/mendesguii/routehelper:${IMAGE_TAG:-latest}
     container_name: routehelper-app
     ports:
       - "8000:8000"
     volumes:
-      - ./:/app
+      - "${DATA_PATH}:/data:ro"
     env_file:
       - .env
     environment:
+      # Inside the container, point the app to the mounted path
+      - DATA_PATH=/data
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
 # Add more services (e.g., db, reverse proxy) as needed
