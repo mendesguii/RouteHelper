@@ -191,7 +191,6 @@ def tab_route_planner(helper: RouteHelper):
                 loadsheet = helper.plan or "No loadsheet generated."
             except Exception as e:
                 loadsheet = f"Error: {e}"
-            # Key metrics from parsed loadsheet (prominent)
             parsed = getattr(helper, 'parsed_loadsheet', None) or {}
             ttl = (parsed.get('weights', {}) or {}).get('total_traffic_load')
             tof = (parsed.get('weights', {}) or {}).get('takeoff_fuel')
@@ -206,14 +205,29 @@ def tab_route_planner(helper: RouteHelper):
             with st.expander("Raw loadsheet text"):
                 st.text(loadsheet)
 
+            # METARs
+            st.markdown("### METAR ☁️")
+            m1, m2 = st.columns(2)
+            try:
+                helper.plan = ''
+                helper.get_metar(origin)
+                m1.text(helper.plan or "No METAR found.")
+            except Exception as e:
+                m1.error(f"Error: {e}")
+            try:
+                helper.plan = ''
+                helper.get_metar(dest)
+                m2.text(helper.plan or "No METAR found.")
+            except Exception as e:
+                m2.error(f"Error: {e}")
 
             # Route
+            st.markdown("### Route")
             try:
                 helper.get_route(origin, dest, fl_start, fl_end, getattr(helper, 'cycle', 2501))
                 route_text = ' '.join(helper.route) if helper.route else 'No route generated.'
             except Exception as e:
                 route_text = f"Error: {e}"
-            st.markdown("### Route")
             st.text_area("Route", value=route_text, height=100, label_visibility='collapsed')
 
             # SID/STAR fixes inferred from route ends
@@ -273,29 +287,9 @@ def tab_route_planner(helper: RouteHelper):
                     except Exception as e:
                         st.error(f"Error: {e}")
 
-            # METARs
-            st.subheader("METAR ☁️")
-            m1, m2 = st.columns(2)
-            try:
-                helper.plan = ''
-                helper.get_metar(origin)
-                m1.text(helper.plan or "No METAR found.")
-            except Exception as e:
-                m1.error(f"Error: {e}")
-            try:
-                helper.plan = ''
-                helper.get_metar(dest)
-                m2.text(helper.plan or "No METAR found.")
-            except Exception as e:
-                m2.error(f"Error: {e}")
-
-            # Output only a single text area with the compiled flight plan
-            st.markdown("---")
-            # Use the current planned route and loadsheet to auto-fill the FPL as much as possible
+            # ICAO FPL PLAN
+            st.markdown("### ICAO FPL (copy and paste to VATSIM)")
             route_str = ' '.join(helper.route) if helper.route else ''
-            parsed = getattr(helper, 'parsed_loadsheet', None) or {}
-            # Example: auto-fill with some defaults, user can edit the text area if needed
-            # Get SI BLOCK TIME from loadsheet for EET
             si_block_time = (parsed.get('times', {}) or {}).get('block_time', '')
             eet = si_block_time.replace(':', '') if si_block_time else ''
             msg = build_vatsim_icao_fpl(
