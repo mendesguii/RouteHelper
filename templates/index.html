@@ -62,19 +62,21 @@
     <div id="planner" class="planner-wrapper">
     <div class="is-flex is-justify-content-space-between is-align-items-center" style="gap: .75rem;">
                 <h1 class="title" style="margin-bottom: .5rem;">Route Planner <span>🗺️</span><span class="hover-hint">(hover to show)</span></h1>
-                        <div class="is-size-7" title="AIRAC {{ airac.cycle or 'unknown' }} ({{ airac.name or 'X-Plane' }})">
-                                <span>AIRAC: <strong>{{ airac.cycle or 'unknown' }}</strong></span>
-                                {% if airac.cycle and airac.is_current %}
+                <div class="is-flex is-align-items-center" style="gap:.5rem;">
+                    <div class="is-size-7" title="AIRAC {{ airac.cycle or 'unknown' }} ({{ airac.name or 'X-Plane' }})">
+                        <span>AIRAC: <strong>{{ airac.cycle or 'unknown' }}</strong></span>
+                        {% if airac.cycle and airac.is_current %}
                             <span style="color:#48c774;" aria-label="Up to date" title="Up to date">✔</span>
-                                {% elif airac.cycle %}
+                        {% elif airac.cycle %}
                             <span style="color:#f14668;" aria-label="Out of date" title="Out of date">✖</span>
-                                {% else %}
-                                    <span style="color:#ffdd57;" aria-label="Missing" title="cycle.json not found">?</span>
+                        {% else %}
+                            <span style="color:#ffdd57;" aria-label="Missing" title="cycle.json not found">?</span>
                         {% endif %}
+                    </div>
+                    <button id="theme-toggle" class="button is-small is-light" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+                        <span id="theme-icon" aria-hidden="true">🌙</span>
+                    </button>
                 </div>
-        <button id="theme-toggle" class="button is-small is-light" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
-            <span id="theme-icon" aria-hidden="true">🌙</span>
-        </button>
     </div>
     <form id="planner-form" hx-post="/plan" hx-target="#results" hx-swap="innerHTML" class="box">
             <div class="columns">
