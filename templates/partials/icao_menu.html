@@ -1,0 +1,13 @@
+{% if codes and q %}
+<div class="dropdown is-active" id="{{ target_id }}">
+  <div class="dropdown-menu" role="menu" style="display:block;">
+    <div class="dropdown-content">
+      {% for code in codes %}
+      <a class="dropdown-item" href="#" onclick="document.getElementById('{{ input_id }}').value='{{ code }}'; this.closest('.dropdown').classList.remove('is-active'); document.getElementById('{{ input_id }}').dispatchEvent(new Event('change', { bubbles: true })); return false;">{{ code }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% else %}
+<!-- empty to hide -->
+{% endif %}

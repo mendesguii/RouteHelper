@@ -1,17 +1,71 @@
 import sys
+import logging
 import requests
-import html5lib
 import os
 import re
 from bs4 import BeautifulSoup
-from typing import Optional, List
-from datetime import datetime
-from dotenv import load_dotenv, set_key
+from typing import Optional
+from dotenv import load_dotenv
 
 
 class RouteHelper:
+    @staticmethod
+    def build_vatsim_icao_fpl(
+        callsign: str,
+        actype: str,
+        wakecat: str,
+        equipment: str,
+        surveillance: str,
+        dep_icao: str,
+        dep_time: str,
+        speed: str,
+        level: str,
+        route: str,
+        dest_icao: str,
+        eet: str,
+        alt1: str = '',
+        alt2: str = '',
+        pbn: str = '',
+        nav: str = '',
+        rnp: str = '',
+        dof: str = '',
+        reg: str = '',
+        sel: str = '',
+        code: str = '',
+        rvr: str = '',
+        opr: str = '',
+        per: str = '',
+        rmk: str = ''
+    ) -> str:
+        # Compose the ICAO FPL message as a single line, as per user request
+        # Only include fields that are not empty, in the correct order
+        parts = [
+            f"(FPL-{callsign}-IS",
+            f"-{actype}/{wakecat}-{equipment}{surveillance}",
+            f"-{dep_icao}{dep_time}",
+            f"-{speed}{level} {route}".strip(),
+            f"-{dest_icao}{eet} {alt1} {alt2}".strip(),
+        ]
+        # Optional fields, only if not empty
+        if pbn: parts.append(f"-PBN/{pbn}")
+        if nav: parts.append(f"NAV/{nav}")
+        if rnp: parts.append(f"RNP{rnp}")
+        if dof: parts.append(f"DOF/{dof}")
+        if reg: parts.append(f"REG/{reg}")
+        if eet: parts.append(f"EET/{eet}")
+        if sel: parts.append(f"SEL/{sel}")
+        if code: parts.append(f"CODE/{code}")
+        if rvr: parts.append(f"RVR/{rvr}")
+        if opr: parts.append(f"OPR/{opr}")
+        if per: parts.append(f"PER/{per}")
+        if rmk: parts.append(f"RMK/{rmk}")
+        # Join all with spaces, close with )
+        return ' '.join([p for p in parts if p.strip()]) + ")"
     """Class to encapsulate route planning logic and state."""
     def __init__(self, env_path='.env'):
+        # Basic logging (INFO by default so raw response shows up)
+        logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(name)s: %(message)s')
+        self._log = logging.getLogger(self.__class__.__name__)
         self.ensure_env(env_path)
         load_dotenv(env_path)
         self.data_path = os.getenv('DATA_PATH', '.')
@@ -27,80 +81,118 @@ class RouteHelper:
         self.plan = None
         self.route = None
 
-    # --- VATSIM / ICAO FPL helpers ---
-    def format_icao_fpl(self,
-                        callsign: str,
-                        dep_icao: str,
-                        dest_icao: str,
-                        dep_time_utc: str = "0000",
-                        speed: str = "N0430",
-                        level: str = "F330",
-                        route: Optional[str] = None,
-                        eet_hhmm: Optional[str] = None,
-                        alt1: Optional[str] = None,
-                        alt2: Optional[str] = None,
-                        actype: str = "B738",
-                        wakecat: str = "M",
-                        equipment: str = "SDFGIRY",
-                        surveillance: str = "S",
-                        other: Optional[List[str]] = None) -> str:
-        """Build an ICAO flight plan message string suitable for VATSIM.
+    # -------- Non-mutating convenience APIs --------
+    def fetch_loadsheet(self, origin: str, dest: str, plane: str) -> tuple[str, Optional[dict]]:
+        """Return loadsheet text and parsed dict without mutating self.plan.
 
-        Produces a standard ATS FPL message in the form:
-        (FPL-<CS>-IS
-        -<TYPE>/<WAKE>-<EQUIP>
-        -<DEP><TIME>
-        -<SPEED><LEVEL> <ROUTE>
-        -<DEST><EET>
-        -<ALT1> <ALT2>
-        -<OTHER>)
-
-        Only a subset is filled using available data; placeholders are used where
-        data is unavailable so users can edit before submitting to VATSIM.
+        Uses the same source as get_fuel.
         """
-        # Defaults and sanitization
-        cs = (callsign or "XXXXXX").upper()
-        dep = (dep_icao or "XXXX").upper()
-        dest = (dest_icao or "XXXX").upper()
-        time_utc = (dep_time_utc or "0000").rjust(4, '0')[:4]
-        lvl = level if level else "F330"
-        spd = speed if speed else "N0430"
-        rte = (route or (" ".join(self.route) if isinstance(self.route, list) else (self.route or ""))).strip()
-        # EET should be HHMM
-        eet = (eet_hhmm or "").replace(":", "")
-        if eet and len(eet) == 3:
-            eet = eet.zfill(4)
-        if not eet:
-            # Try to derive from loadsheet if available
-            try:
-                eet_guess = self.get_info_after('SI BLOCK TIME', self.plan).replace(':', '') if self.plan else ''
-            except Exception:
-                eet_guess = ''
-            eet = (eet_guess or "0000")
-        # Alternates line (can be empty)
-        alt_line = ""
-        if alt1:
-            alt_line += alt1.upper()
-        if alt2:
-            alt_line += (" " if alt_line else "") + alt2.upper()
-        # Other information
-        dof = 'DOF/' + datetime.today().strftime('%y%m%d')
-        other_items = [dof]
-        # Keep equipment/surveillance simple; advanced PBN not handled here.
-        other_line = " ".join([*other_items, *(other or [])]).strip()
-        # Assemble message
-        lines = [
-            f"(FPL-{cs}-IS",
-            f"-{actype.upper()}/{wakecat.upper()}-{equipment}",
-            f"-{dep}{time_utc}",
-            f"-{spd}{lvl} {rte}".rstrip(),
-            f"-{dest}{eet}",
-            f"-{alt_line}" if alt_line else "-",
-            f"-{other_line}" if other_line else "-",
-            ")"
-        ]
-        return "\n".join(lines)
+        headers = {
+            'okstart': 1,
+            'EQPT': plane.upper(),
+            'ORIG': origin.upper(),
+            'DEST': dest.upper(),
+            'submit': 'LOADSHEET',
+            'RULES': 'FARDOM',
+            'UNITS': 'METRIC',
+        }
+        r = requests.post('http://fuelplanner.com/index.php', data=headers)
+        soup = BeautifulSoup(r.text, 'html5lib')
+        loadsheet = soup.pre.text.replace('fuelplanner.com | home', '').replace('Copyright 2008-2019 by Garen Evans', '')
+        parsed = None
+        try:
+            parsed = self.parse_loadsheet(loadsheet)
+        except Exception:
+            parsed = None
+        return loadsheet, parsed
 
+    def fetch_route(self, origin: str, dest: str, minalt: str, maxalt: str, cycle: int) -> tuple[list, str]:
+        """Return route list and full route text without mutating self.route/plan."""
+        headers = {
+            'id1': origin.upper(),
+            'ic1': '',
+            'id2': dest.upper(),
+            'ic2': '',
+            'minalt': f'FL{minalt}',
+            'maxalt': f'FL{maxalt}',
+            'lvl': 'B',
+            'dbid': cycle,
+            'usesid': 'Y',
+            'usestar': 'Y',
+            'easet': 'Y',
+            'rnav': 'Y',
+            'nats': 'R'
+        }
+        r = requests.post('http://rfinder.asalink.net/free/autoroute_rtx.php', data=headers)
+        soup = BeautifulSoup(r.text, 'html5lib')
+        genroute_tags = soup.find_all('tt')
+        if len(genroute_tags) < 2:
+            return [], 'No route generated.'
+        genroute = genroute_tags[1].text
+        route_list = genroute.split(' ')[2:-2]
+        route_text = ' '.join(route_list) if route_list else 'No route generated.'
+        return route_list, route_text
+
+    def fetch_metar(self, icao: str) -> str:
+        """Return METAR string without mutating self.plan."""
+        r = requests.get(f'https://aviationweather.gov/api/data/metar?ids={icao}')
+        soup = BeautifulSoup(r.text, 'html5lib')
+        return soup.text
+
+    def list_cifp_icaos(self, prefix: str = "", limit: int = 20) -> list[str]:
+        """List available ICAO codes from the CIFP directory based on a prefix.
+
+        Looks under DATA_PATH/CIFP first; if not present, falls back to DATA_PATH.
+        Returns up to `limit` codes, sorted, filtered by case-insensitive prefix.
+        """
+        base_cifp = os.path.join(self.data_path, 'CIFP')
+        search_dir = base_cifp if os.path.isdir(base_cifp) else self.data_path
+        codes: list[str] = []
+        try:
+            for name in os.listdir(search_dir):
+                if name.lower().endswith('.dat'):
+                    code = os.path.splitext(name)[0]
+                    codes.append(code)
+        except Exception:
+            # In case DATA_PATH is invalid; return empty list gracefully
+            return []
+        p = (prefix or '').strip().upper()
+        if p:
+            codes = [c for c in codes if c.upper().startswith(p)]
+        codes.sort()
+        return codes[: max(0, int(limit))]
+
+    def search_in_dict_text(self, obj_dict: dict, value: str) -> str:
+        """Return search results as text (non-mutating)."""
+        lines = [f"- Fix Search: {value}"]
+        for k, v in obj_dict.items():
+            if value in v or value in k:
+                lines.append(f"* Chart: {k} || Route: {v}")
+        return '\n'.join(lines).strip()
+
+    def infer_sid_star(self, origin: str, dest: str, route_list: list[str]) -> tuple[str, str]:
+        """Infer SID/STAR text based on first/last fixes of route_list."""
+        sid_text = "No SID fix found."
+        star_text = "No STAR fix found."
+        try:
+            self.get_file_data(origin)
+            if route_list:
+                sid_dict = self.structure_data(self.sids)
+                self.plan = ''  # ensure previous state does not interfere
+                self.search_in_dict(sid_dict, route_list[0])
+                sid_text = self.plan or sid_text
+        except Exception as e:
+            sid_text = f"Error: {e}"
+        try:
+            self.get_file_data(dest)
+            if route_list:
+                star_dict = self.structure_data(self.stars)
+                self.plan = ''
+                self.search_in_dict(star_dict, route_list[-1])
+                star_text = self.plan or star_text
+        except Exception as e:
+            star_text = f"Error: {e}"
+        return sid_text, star_text
 
     @staticmethod
     def ensure_env(env_path):
@@ -130,10 +222,25 @@ class RouteHelper:
         self.apps = []
         self.rwys = []
 
-    def get_file_data(self, file_path):
-        """Parse .dat file and populate procedure lists."""
+    def get_file_data(self, name_or_path: str):
+        """Parse .dat file and populate procedure lists.
+
+        Simple rules:
+        - If name_or_path is an existing file, use it.
+        - Else treat it as an ICAO code and try:
+          1) DATA_PATH/CIFP/<ICAO>.dat
+          2) DATA_PATH/<ICAO>.dat
+        """
         self.reset_procedure_lists()
-        with open(file_path, 'r', encoding='utf-8') as f:
+        # 1) Direct file path
+        if os.path.isfile(name_or_path):
+            resolved = name_or_path
+        else:
+            icao = os.path.basename(name_or_path).split('.')[0]
+            candidate_cifp = os.path.join(self.data_path, 'CIFP', f'{icao}.dat')
+            candidate_root = os.path.join(self.data_path, f'{icao}.dat')
+            resolved = candidate_cifp if os.path.isfile(candidate_cifp) else candidate_root
+        with open(resolved, 'r', encoding='utf-8') as f:
             for line in f:
                 if 'SID:' in line:
                     self.sids.append(line)
@@ -170,6 +277,18 @@ class RouteHelper:
             self.clean_dictionary(object_dict, proc_type)
         return object_dict
 
+    # Utility used by legacy code to extract times from text
+    @staticmethod
+    def get_info_after(label: str, text: Optional[str]) -> str:
+        if not text:
+            return ''
+        # Attempt generic HH:MM capture following the label
+        try:
+            m = re.search(fr'{re.escape(label)}\s+(\d{{2}}:\d{{2}})', text)
+            return m.group(1) if m else ''
+        except Exception:
+            return ''
+
     @staticmethod
     def clean_dictionary(obj_dict, proc_type):
         """Clean up the procedure dictionary by merging RW entries."""
@@ -189,78 +308,35 @@ class RouteHelper:
             del obj_dict[item]
 
     def search_in_dict(self, obj_dict, value):
-        """Search for a value in the procedure dictionary."""
-        # Always overwrite self.plan for clean output (no leading blank lines)
-        lines = [f"- Fix Search: {value}"]
-        for k, v in obj_dict.items():
-            if value in v or value in k:
-                lines.append(f"* Chart: {k} || Route: {v}")
-        result = '\n'.join(lines).strip()  # Remove leading/trailing blank lines
+        """Search for a value in the procedure dictionary (delegates to search_in_dict_text)."""
+        result = self.search_in_dict_text(obj_dict, value)
         if self.plan is not None:
             self.plan = result
         else:
             print(result)
 
     def get_metar(self, icao):
-        """Fetch METAR for an airport."""
-        r = requests.get(f'https://aviationweather.gov/api/data/metar?ids={icao}')
-        soup = BeautifulSoup(r.text, 'html5lib')
-        metar = soup.text
+        """Fetch METAR for an airport (delegates to fetch_metar)."""
+        metar = self.fetch_metar(icao)
         if self.plan is not None:
             self.plan += f'\n- Metar {icao}: {metar}'
         else:
             print(f'Metar: {metar}')
 
     def get_route(self, icao, icao_dest, minalt, maxalt, cycle):
-        """Fetch route from rfinder."""
-        headers = {
-            'id1': icao.upper(),
-            'ic1': '',
-            'id2': icao_dest.upper(),
-            'ic2': '',
-            'minalt': f'FL{minalt}',
-            'maxalt': f'FL{maxalt}',
-            'lvl': 'B',
-            'dbid': cycle,
-            'usesid': 'Y',
-            'usestar': 'Y',
-            'easet': 'Y',
-            'rnav': 'Y',
-            'nats': 'R'
-        }
-        r = requests.post('http://rfinder.asalink.net/free/autoroute_rtx.php', data=headers)
-        soup = BeautifulSoup(r.text, 'html5lib')
-        genroute_tags = soup.find_all('tt')
-        if len(genroute_tags) < 2:
-            self.route = []
-            return
-        genroute = genroute_tags[1].text
-        self.route = genroute.split(' ')[2:-2]
+        """Fetch route from rfinder (delegates to fetch_route)."""
+        route_list, route_text = self.fetch_route(icao, icao_dest, minalt, maxalt, cycle)
+        self.route = route_list
         if self.plan is not None:
-            self.plan += f'- Route: {genroute}\n'
+            self.plan += f'- Route: {route_text}\n'
         else:
-            print(f'Route: {genroute}')
+            print(f'Route: {route_text}')
 
     def get_fuel(self, icao, icao_dest, plane):
-        """Fetch fuel/loadsheet info."""
-        headers = {
-            'okstart': 1,
-            'EQPT': plane.upper(),
-            'ORIG': icao.upper(),
-            'DEST': icao_dest.upper(),
-            'submit': 'LOADSHEET',
-            'RULES': 'FARDOM',
-            'UNITS': 'METRIC',
-        }
-        r = requests.post('http://fuelplanner.com/index.php', data=headers)
-        soup = BeautifulSoup(r.text, 'html5lib')
-        loadsheet = soup.pre.text.replace('fuelplanner.com | home', '').replace('Copyright 2008-2019 by Garen Evans', '')
+        """Fetch fuel/loadsheet info (delegates to fetch_loadsheet)."""
+        loadsheet, parsed = self.fetch_loadsheet(icao, icao_dest, plane)
         self.plan = loadsheet
-        # Parse and store structured loadsheet data for reuse
-        try:
-            self.parsed_loadsheet = self.parse_loadsheet(loadsheet)
-        except Exception:
-            self.parsed_loadsheet = None
+        self.parsed_loadsheet = parsed
 
     def parse_loadsheet(self, text: str) -> dict:
         """Parse the fuelplanner loadsheet text into a structured dictionary.
@@ -433,46 +509,6 @@ class RouteHelper:
 
 
 
-    def gen_flight_plan(self, icao, icao_dest, plane, output_dir='flights'):
-        # Use parsed loadsheet for SI BLOCK TIME and TIME TO EMPTY
-        eet = ''
-        endu = ''
-        if hasattr(self, 'parsed_loadsheet') and self.parsed_loadsheet:
-            eet = (self.parsed_loadsheet.get('times', {}) or {}).get('block_time', '')
-            endu = (self.parsed_loadsheet.get('times', {}) or {}).get('time_to_empty', '')
-            if eet:
-                eet = eet.replace(':', '')
-            if endu:
-                endu = endu.replace(':', '')
-        dof = 'DOF/' + datetime.today().strftime('%y%m%d')
-        base = f"""[FLIGHTPLAN]
-ID=XXXXXX
-RULES=I
-FLIGHTTYPE=S
-NUMBER=1
-ACTYPE={plane}
-WAKECAT=M
-EQUIPMENT=SDFGIRY
-TRANSPONDER=S
-DEPICAO={icao}
-DEPTIME=
-SPEEDTYPE=N
-SPEED=
-LEVELTYPE=F
-LEVEL=330
-ROUTE={' '.join(self.route) if self.route else ''}
-DESTICAO={icao_dest}
-EET={eet}
-ALTICAO=
-ALTICAO2=
-OTHER={dof}
-ENDURANCE={endu}
-POB=
-"""
-        os.makedirs(output_dir, exist_ok=True)
-        out_path = os.path.join(output_dir, f'{icao}{icao_dest}.fpl')
-        with open(out_path, 'w', encoding='utf-8') as f:
-            f.write(base)
 
     def run(self, argv):
         try:
@@ -483,13 +519,13 @@ POB=
             fix = argv[3].upper() if len(argv) > 3 else None
 
             if option == 'SID':
-                self.get_file_data(f'{self.data_path}/{icao}.dat')
+                self.get_file_data(icao)
                 if fix is None:
                     print(self.structure_data(self.sids))
                 else:
                     self.search_in_dict(self.structure_data(self.sids), fix)
             elif option == 'STAR':
-                self.get_file_data(f'{self.data_path}/{icao}.dat')
+                self.get_file_data(icao)
                 if fix is None:
                     print(self.structure_data(self.stars))
                 else:
@@ -503,13 +539,12 @@ POB=
                 plane = argv[3]
                 self.get_fuel(icaos[0], icaos[1], plane)
                 self.get_route(icaos[0], icaos[1], '330', '330', self.cycle)
-                self.gen_flight_plan(icaos[0], icaos[1], plane)
                 self.get_metar(icaos[0])
                 self.get_metar(icaos[1])
-                self.get_file_data(f'{self.data_path}/{icaos[0]}.dat')
+                self.get_file_data(icaos[0])
                 if self.route:
                     self.search_in_dict(self.structure_data(self.sids), self.route[0])
-                self.get_file_data(f'{self.data_path}/{icaos[1]}.dat')
+                self.get_file_data(icaos[1])
                 if self.route:
                     self.search_in_dict(self.structure_data(self.stars), self.route[-1])
                 print(self.plan)
@@ -526,7 +561,6 @@ POB=
         - ICAO (SID/STAR) FIX: Search for a fix in all procedures (can also search by name of procedure)
         - ICAO METAR: Returns METAR of the airport
         - ICAO/ICAO ROUTE PLANE: List all info for a route (Route, Fuel, SIDS and STARS)
-        and generate an IVAO FlightPlan.
         """
             )
             print(f"Error: {e}")

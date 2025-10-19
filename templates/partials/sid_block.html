@@ -1,0 +1,28 @@
+<div id="sid-block-{{ origin }}" class="box" hx-target="this" hx-swap="outerHTML">
+  <div class="level">
+    <div class="level-left">
+      <div class="level-item">
+        <h3 class="subtitle">SID</h3>
+      </div>
+      <div class="level-item">
+        <a class="button is-small is-link is-light" href="https://chartfox.org/{{ origin | upper }}" target="_blank" rel="noopener noreferrer">Charts</a>
+      </div>
+    </div>
+    <div class="level-right">
+      <div class="level-item">
+        <form hx-post="/search_sid" hx-target="#sid-block-{{ origin }}" hx-swap="outerHTML" class="field has-addons">
+          <input type="hidden" name="origin" value="{{ origin }}">
+          <div class="control">
+            <input class="input is-small" type="text" name="fix" placeholder="Search fix (e.g. VUREP)">
+          </div>
+          <div class="control">
+            <button class="button is-small is-light is-rounded" type="submit" title="Search SID" aria-label="Search SID">
+              <span class="icon" aria-hidden="true">🔎</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <textarea class="textarea" readonly rows="6" style="background-color: transparent; color: inherit;">{{ sid_text }}</textarea>
+</div>

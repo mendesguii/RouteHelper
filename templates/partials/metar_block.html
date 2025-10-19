@@ -1,0 +1,22 @@
+<div id="metar-{{ icao }}" class="box" hx-target="this" hx-swap="outerHTML">
+  <div class="level">
+    <div class="level-left">
+      <div class="level-item">
+        <h3 class="subtitle">{{ icao | upper }}</h3>
+      </div>
+    </div>
+    <div class="level-right">
+      <div class="level-item">
+        <button class="button is-small is-light is-rounded"
+                hx-get="/metar?icao={{ icao }}"
+                hx-target="#metar-{{ icao }}"
+                hx-swap="outerHTML"
+                title="Refresh METAR"
+                aria-label="Refresh METAR">
+          <span class="icon" aria-hidden="true">🔄</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <pre style="white-space: pre-wrap; background-color: transparent; color: inherit;">{{ metar }}</pre>
+</div>

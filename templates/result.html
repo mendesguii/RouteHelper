@@ -1,0 +1,55 @@
+<div class="box">
+    <h2 class="subtitle">Loadsheet <span>🧾</span></h2>
+    <div class="columns">
+        <div class="column">Total Traffic Load (kg): <strong>{{ ttl or 'N/A' }}</strong></div>
+        <div class="column">Take Off Fuel (kg): <strong>{{ tof or 'N/A' }}</strong></div>
+        <div class="column">SI Block Time: <strong>{{ blk or 'N/A' }}</strong></div>
+        <div class="column">Endurance: <strong>{{ endurance or 'N/A' }}</strong></div>
+    </div>
+    <details>
+        <summary>Raw loadsheet text</summary>
+        <pre>{{ loadsheet }}</pre>
+    </details>
+    <hr>
+    <h2 class="subtitle">Route <span>🗺️</span></h2>
+    <textarea class="textarea" readonly rows="3">{{ route_text }}</textarea>
+    <div class="columns">
+        <div class="column">
+            {% include 'partials/sid_block.html' %}
+        </div>
+        <div class="column">
+            {% include 'partials/star_block.html' %}
+        </div>
+    </div>
+    <hr>
+    <h2 class="subtitle">METAR <span>☁️</span></h2>
+    <div class="columns">
+        <div class="column">
+            {% set icao = origin %}
+            {% set metar = metar_origin %}
+            {% include 'partials/metar_block.html' %}
+        </div>
+        <div class="column">
+            {% set icao = dest %}
+            {% set metar = metar_dest %}
+            {% include 'partials/metar_block.html' %}
+        </div>
+    </div>
+    <hr>
+    <h2 class="subtitle">VATSIM - ICAO FPL <span>📝</span></h2>
+    <textarea class="textarea" readonly rows="4">{{ icao_fpl }}</textarea>
+    <div class="field is-grouped is-grouped-centered">
+        <div class="control">
+            <a href="/" class="button is-light">Back</a>
+        </div>
+    </div>
+</div>
+<script>
+// Apply theme from localStorage to result page as well
+(function(){
+    var root = document.documentElement;
+    var theme = localStorage.getItem('theme') || 'auto';
+    var isDark = theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) root.classList.add('dark'); else root.classList.remove('dark');
+})();
+</script>

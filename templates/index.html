@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RouteHelper Planner</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <style>
+        /* Collapsible planner: hidden by default after submit, show on hover */
+        .planner-wrapper.collapsed .box {
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+            padding: 0;
+            margin-bottom: 0;
+            transition: height 0.25s ease, opacity 0.25s ease, padding 0.25s ease, margin 0.25s ease;
+        }
+        .planner-wrapper.collapsed:hover .box {
+            height: auto;
+            opacity: 1;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .planner-wrapper .hover-hint {
+            display: none;
+        }
+        .planner-wrapper.collapsed .hover-hint {
+            display: inline-block;
+            color: #7a7a7a;
+            font-size: 0.9rem;
+            margin-left: 0.75rem;
+        }
+        /* ICAO suggestion dropdown */
+        #origin-menu, #dest-menu { position: relative; }
+        #origin-menu .dropdown, #dest-menu .dropdown { position: absolute; width: 100%; z-index: 20; }
+        .dropdown-content { max-height: 220px; overflow: auto; }
+        /* Dark mode theme overrides */
+        html.dark, html.dark body { background-color: #121212; color: #e8e8e8; }
+        html.dark .box { background-color: #1e1e1e; color: #e8e8e8; border-color: #2a2a2a; }
+        html.dark .label, html.dark .title, html.dark .subtitle { color: #f0f0f0; }
+        html.dark .input, html.dark .select select, html.dark .textarea { background-color: #222; color: #eee; border-color: #3a3a3a; }
+        html.dark .textarea[readonly] { background-color: #1c1c1c; }
+        html.dark .button.is-light { background-color: #2a2a2a; color: #e8e8e8; border-color: #3a3a3a; }
+        html.dark .dropdown-content { background-color: #1e1e1e; border-color: #2a2a2a; }
+        html.dark .dropdown-item { color: #e8e8e8; }
+        html.dark .dropdown-item:hover { background-color: #2a2a2a; }
+    html.dark .htmx-indicator { color: #aaa; }
+    /* Strong/bold text should be readable in dark */
+    html.dark strong { color: #ffffff; }
+        /* Ensure pre/code blocks are dark-themed (e.g., METAR blocks) */
+        html.dark pre, html.dark code { background-color: #1c1c1c; color: #e8e8e8; border-color: #2a2a2a; }
+        html.dark .box pre { background-color: #1c1c1c; color: #e8e8e8; }
+        /* Links visibility in dark */
+        html.dark a { color: #8ab4f8; }
+        /* Placeholder color */
+        html.dark ::placeholder { color: #b5b5b5; opacity: 1; }
+    </style>
+</head>
+<body>
+<section class="section">
+    <div class="container">
+    <div id="planner" class="planner-wrapper">
+    <div class="is-flex is-justify-content-space-between is-align-items-center" style="gap: .75rem;">
+        <h1 class="title" style="margin-bottom: .5rem;">Route Planner <span>🗺️</span><span class="hover-hint">(hover to show)</span></h1>
+        <button id="theme-toggle" class="button is-small is-light" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+            <span id="theme-icon" aria-hidden="true">🌙</span>
+        </button>
+    </div>
+    <form id="planner-form" hx-post="/plan" hx-target="#results" hx-swap="innerHTML" class="box">
+            <div class="columns">
+                <div class="column">
+                    <div class="field">
+                        <label class="label">Origin ICAO</label>
+                        <div class="control">
+                <input id="origin-input" class="input" type="text" name="origin" autocomplete="off" required
+                    hx-get="/icao_suggest" hx-trigger="keyup changed delay:150ms" 
+                    hx-target="#origin-menu" hx-indicator="#origin-indicator"
+                    hx-params="origin,mode,input_id,target_id,limit"
+                    hx-vals='{"mode": "menu", "input_id": "origin-input", "target_id": "origin-menu", "limit": 12}'>
+                <div id="origin-menu"></div>
+                <span id="origin-indicator" class="htmx-indicator">Loading…</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="field">
+                        <label class="label">Destination ICAO</label>
+                        <div class="control">
+                <input id="dest-input" class="input" type="text" name="dest" autocomplete="off" required
+                    hx-get="/icao_suggest" hx-trigger="keyup changed delay:150ms"
+                    hx-target="#dest-menu" hx-indicator="#dest-indicator"
+                    hx-params="dest,mode,input_id,target_id,limit"
+                    hx-vals='{"mode": "menu", "input_id": "dest-input", "target_id": "dest-menu", "limit": 12}'>
+                <div id="dest-menu"></div>
+                <span id="dest-indicator" class="htmx-indicator">Loading…</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="field">
+                        <label class="label">Aircraft</label>
+                        <div class="control">
+                            <div class="select">
+                                <select name="plane">
+                                    {% for ac in aircraft_options %}
+                                    <option value="{{ ac }}">{{ ac }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% set default_start = default_fl_start|int %}
+                {% set default_end = default_fl_end|int %}
+                <div class="column">
+                    <div class="field">
+                        <label class="label">FL Start</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="fl_start">
+                                    {% for fl in range(100, 451, 10) %}
+                                    <option value="{{ fl }}" {% if fl == default_start %}selected{% endif %}>FL{{ fl }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="field">
+                        <label class="label">FL End</label>
+                        <div class="control">
+                            <div class="select is-fullwidth">
+                                <select name="fl_end">
+                                    {% for fl in range(100, 451, 10) %}
+                                    <option value="{{ fl }}" {% if fl == default_end %}selected{% endif %}>FL{{ fl }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="field is-grouped is-grouped-centered">
+                <div class="control">
+                    <button class="button is-primary" type="submit">Plan Route</button>
+                </div>
+            </div>
+    </form>
+    </div>
+        <div id="results"></div>
+    </div>
+</section>
+<script>
+    // When the plan completes (htmx afterOnLoad), collapse the planner wrapper
+    document.body.addEventListener('htmx:afterOnLoad', function(ev) {
+        var planner = document.getElementById('planner');
+        if (planner && ev && ev.detail && ev.detail.target && ev.detail.target.id === 'results') {
+            planner.classList.add('collapsed');
+        }
+    });
+    // Keep planner collapsed after planning; reveal only on hover
+    // Theme toggle with persistence
+    (function(){
+        var root = document.documentElement;
+        var btn = document.getElementById('theme-toggle');
+        var icon = document.getElementById('theme-icon');
+        var mql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+        function applyTheme(theme){
+            var isDark = (theme === 'dark') || (theme === 'auto' && mql && mql.matches);
+            if (isDark) root.classList.add('dark'); else root.classList.remove('dark');
+            if (icon) icon.textContent = theme === 'auto' ? '🖥️' : (isDark ? '☀️' : '🌙');
+        }
+        function savedTheme(){ return localStorage.getItem('theme') || 'auto'; }
+        function setTheme(theme){ localStorage.setItem('theme', theme); applyTheme(theme); }
+        applyTheme(savedTheme());
+        if (mql && mql.addEventListener) { mql.addEventListener('change', function(){ if (savedTheme()==='auto') applyTheme('auto'); }); }
+        else if (mql && mql.addListener) { mql.addListener(function(){ if (savedTheme()==='auto') applyTheme('auto'); }); }
+        if (btn) btn.addEventListener('click', function(){
+            var current = savedTheme();
+            var next = current === 'light' ? 'dark' : (current === 'dark' ? 'auto' : 'light');
+            setTheme(next);
+            btn.title = 'Theme: ' + next;
+        });
+        btn.title = 'Theme: ' + savedTheme();
+    })();
+    // Close suggestion menus on blur or Escape
+    function closeMenu(id){ var el = document.getElementById(id); if (el) { var dd = el.querySelector('.dropdown'); if (dd) dd.classList.remove('is-active'); el.innerHTML = ''; } }
+    ['origin-input', 'dest-input'].forEach(function(inputId){
+        var el = document.getElementById(inputId);
+        if (!el) return;
+        el.addEventListener('blur', function(){ setTimeout(function(){ closeMenu(inputId.replace('-input','-menu')); }, 150); });
+        el.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') { closeMenu(inputId.replace('-input','-menu')); } });
+    });
+</script>
+</body>
+</html>
