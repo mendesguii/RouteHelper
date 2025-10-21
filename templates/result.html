@@ -14,34 +14,7 @@
             </span>
         </div>
     </div>
-        <!-- Scoped styles for Callsign + Eligible FLs block to ensure contrast in light/dark -->
-        <style>
-      .alt-fl.notification { background-color: #f5f7fb; }
-            .alt-fl .tag { background: rgba(0,0,0,0.06); color: inherit; border-color: transparent; }
-            .alt-fl .tag.is-clickable { cursor: pointer; }
-            .alt-fl .tag.is-active { border: 1px solid #2276e3; box-shadow: 0 0 0 2px rgba(34,118,227,0.15) inset; }
-            html.dark .alt-fl .tag.is-active { border-color: #8ab4f8; box-shadow: 0 0 0 2px rgba(138,180,248,0.2) inset; }
-      html.dark .alt-fl.notification { background-color: #1e2835; color: #e6eefc; }
-      html.dark .alt-fl .tag { background: rgba(255,255,255,0.08); color: #e6eefc; border-color: rgba(255,255,255,0.12); }
-            /* Callsign card with subtle ASCII-style background */
-            .callsign-card { position: relative; overflow: hidden; }
-                    .callsign-card .ascii-bg {
-                position: absolute; inset: 0; pointer-events: none; opacity: 0.06; color: #2a4b6f;
-                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-                        white-space: pre; line-height: 1.2; font-size: 16px; transform: rotate(-6deg) scale(1.18);
-            }
-            html.dark .callsign-card .ascii-bg { color: #a4c2ff; opacity: 0.05; }
-            .callsign-card .content-wrap { position: relative; z-index: 1; }
-            .callsign-card .input { text-transform: uppercase; }
-        /* Equal height columns for Callsign / UTC Off-block / Eligible FLs */
-        .equal-cols > .column { display: flex; }
-        .equal-cols > .column > .box,
-        .equal-cols > .column > .notification,
-        .equal-cols > .column > .callsign-card { flex: 1 1 auto; display: flex; flex-direction: column; }
-        .equal-cols > .column > .box .content-wrap { flex: 1 1 auto; }
-        /* Vertically center content inside UTC Off-block card only */
-        .utc-box { justify-content: center; }
-    </style>
+        
     
     <h1 class="title is-4">Loadsheet <span>🧾</span></h1>
     <!-- Summary bar: 5 items evenly distributed -->
@@ -86,7 +59,7 @@
             <div class="columns is-variable is-3 equal-cols">
                 <div class="column is-full-mobile is-one-third-tablet is-one-third-desktop">
                 <div class="box callsign-card" aria-labelledby="callsign-title">
-                      <div class="ascii-bg" aria-hidden="true">
+                    <div class="ascii-bg" aria-hidden="true">
             F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈
             ✈ ✈ ✈ ✈  F P L  ✈ ✈ ✈ ✈  F P L  ✈ ✈ ✈ ✈  F P L  ✈ ✈
             F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈
@@ -96,7 +69,7 @@
             F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈
             ✈ ✈ ✈ ✈  F P L  ✈ ✈ ✈ ✈  F P L  ✈ ✈ ✈ ✈  F P L  ✈ ✈
             F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈
-                      </div>
+                    </div>
                     <div class="content-wrap">
                                     <div class="is-flex is-align-items-center is-justify-content-space-between" style="gap:.5rem;">
                                         <h2 id="callsign-title" class="title is-6" style="margin:0;">Callsign</h2>
@@ -121,7 +94,12 @@
                 </div>
             </div>
             <div class="column is-full-mobile is-one-third-tablet is-one-third-desktop">
-                <div class="box utc-box" aria-labelledby="utc-offblock-title">
+                <div class="box callsign-card utc-box" aria-labelledby="utc-offblock-title">
+                    <div class="ascii-bg" aria-hidden="true">
+            F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈
+            ✈ ✈ ✈ ✈  F P L  ✈ ✈ ✈ ✈  F P L  ✈ ✈ ✈ ✈  F P L  ✈ ✈
+            F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈
+                    </div>
                     <div class="is-flex is-justify-content-space-between is-align-items-center" style="margin:.25rem 0 .25rem;">
                         <h2 id="utc-offblock-title" class="title is-6" style="margin:0;">UTC Off‑block</h2>
                         <div style="min-width:160px; flex:0 0 auto; margin-left:auto; text-align:left;">
@@ -138,7 +116,7 @@
                                     <input id="dep-time-input" class="input is-medium" type="text" inputmode="numeric" pattern="\\d{4}" maxlength="4" placeholder="HHMM" aria-labelledby="dep-time-label" aria-label="Departure UTC time in HHMM">
                                 </div>
                                 <div class="control">
-                                    <button id="use-now-btn" class="button is-link is-light is-medium" type="button" title="Use current UTC time" aria-label="Use current UTC time">⏱️</button>
+                                    <button id="use-now-btn" class="button is-link is-medium" type="button" title="Use current UTC time" aria-label="Use current UTC time">⏱️</button>
                                 </div>
                             </div>
                         </div>
@@ -146,7 +124,12 @@
                 </div>
             </div>
             <div class="column is-full-mobile is-one-third-tablet is-one-third-desktop">
-                <div class="notification alt-fl is-link is-light" style="margin-top:.25rem;">
+                <div class="box callsign-card alt-fl" style="margin-top:.25rem;">
+                    <div class="ascii-bg" aria-hidden="true">
+            F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈
+            ✈ ✈ ✈ ✈  F P L  ✈ ✈ ✈ ✈  F P L  ✈ ✈ ✈ ✈  F P L  ✈ ✈
+            F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈ F P L ✈
+                    </div>
                     <strong>Eligible flight levels:</strong>
                     {% if eligible_fls and eligible_fls|length > 0 %}
                     <div class="tags" style="margin-top:.25rem;">
@@ -180,6 +163,7 @@
         </form>
     </div>
     <div id="route-map-container"></div>
+    <hr>
     <div class="columns">
         <div class="column">
             {% include 'partials/sid_block.html' %}
@@ -189,210 +173,37 @@
         </div>
     </div>
     <hr>
-    <h1 class="title is-4">METAR <span>☁️</span></h1>
+
     <div class="columns">
         <div class="column">
-            {% set icao = origin %}
-            {% set metar = metar_origin %}
-            {% include 'partials/metar_block.html' %}
-        </div>
-        <div class="column">
-            {% set icao = dest %}
-            {% set metar = metar_dest %}
-            {% include 'partials/metar_block.html' %}
+            <h2 class="title is-5">METARs <span>☁️</span></h2>
+            <div class="columns is-variable is-3">
+                <div class="column">
+                    {% set icao = origin %}
+                    {% set metar = metar_origin %}
+                    {% set airport_kind = 'origin' %}
+                    {% include 'partials/metar_block.html' %}
+                </div>
+                <div class="column">
+                    {% set icao = dest %}
+                    {% set metar = metar_dest %}
+                    {% set airport_kind = 'dest' %}
+                    {% include 'partials/metar_block.html' %}
+                </div>
+            </div>
         </div>
     </div>
+
     <hr>
-    <h1 class="title is-4">VATSIM - ICAO FPL <span>📝</span></h1>
-    <textarea id="icao-fpl-text" class="textarea" readonly rows="4">{{ icao_fpl }}</textarea>
-    <div class="has-text-centered" style="margin-top:.5rem;">
-        <a id="vatsim-file-link" class="button is-link is-light" target="_blank" rel="noopener">
-            File flight plan
-        </a>
+
+    <h1 class="title is-4">ICAO FPL <span>📝</span></h1>
+    <div class="field">
+        <div class="control">
+            <textarea id="icao-fpl-text" class="textarea" rows="10" readonly>{{ icao_fpl }}</textarea>
+        </div>
     </div>
-</div>
-<script>
-// Apply theme from localStorage to result page as well
-(function(){
-    var root = document.documentElement;
-    var theme = localStorage.getItem('theme') || 'auto';
-    var isDark = theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDark) root.classList.add('dark'); else root.classList.remove('dark');
-})();
-// VATSIM FPL helpers and interactivity
-(function(){
-    var fplTa = document.getElementById('icao-fpl-text');
-    var routeTa = document.getElementById('route-text');
-    var fileLink = document.getElementById('vatsim-file-link');
-    var csInput = document.getElementById('callsign-input');
-    var csExamples = document.querySelectorAll('.callsign-example');
-    var utcClockEl = document.getElementById('utc-clock');
-    var depTimeInput = document.getElementById('dep-time-input');
-    var useNowBtn = document.getElementById('use-now-btn');
-    var ORIGIN_ICAO = "{{ origin }}";
-
-    function updateVatsimLink(){
-        if (!fplTa || !fileLink) return;
-        var raw = encodeURIComponent(fplTa.value || '');
-        fileLink.href = 'https://my.vatsim.net/pilots/flightplan/beta?raw=' + raw;
-    }
-
-    // Update ICAO FPL string with new level and/or route, preserving other fields
-    function updateIcaoFpl(opts){
-        if (!fplTa) return;
-    var fpl = fplTa.value || '';
-    // Match the speed/level/route line in the multiline FPL
-    var m = fpl.match(/\n-((?:N|M)[0-9A-Z]+)(F\d{3})([^\n)]*)/);
-        if (!m) { updateVatsimLink(); return; }
-        var full = m[0];
-        var spd = m[1];
-        var lvl = m[2];
-        var rteTail = m[3] || '';
-        var newLvl = lvl;
-        var newRoute = null;
-        if (opts && opts.newLevelFL) {
-            // convert FL300 -> F300
-            var digits = String(opts.newLevelFL).replace(/[^0-9]/g,'').padStart(3,'0');
-            newLvl = 'F' + digits;
-        }
-        if (opts && typeof opts.newRoute === 'string') {
-            newRoute = opts.newRoute.trim();
-        }
-    var rebuilt = '\n-' + spd + newLvl + (newRoute !== null ? (newRoute ? ' ' + newRoute : '') : rteTail);
-        fplTa.value = fpl.replace(full, rebuilt);
-        updateVatsimLink();
-    }
-
-    // Update departure time (third line "-ORIGHHMM") using the origin ICAO
-    function updateIcaoDepTime(hhmm){
-        if (!fplTa) return;
-        var v = (hhmm || '').replace(/[^0-9]/g,'').slice(0,4);
-        if (v.length !== 4) return; // require HHMM
-        var fpl = fplTa.value || '';
-        var re = new RegExp('\n-' + ORIGIN_ICAO + '(\\d{4})');
-        if (re.test(fpl)){
-            fplTa.value = fpl.replace(re, function(s, t){ return s.replace(t, v); });
-        }
-        updateVatsimLink();
-    }
-
-        function updateIcaoCallsign(newCs){
-            if (!fplTa) return;
-            var fpl = fplTa.value || '';
-            var cs = (newCs || '').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
-            if (!cs) return;
-            fplTa.value = fpl.replace(/\(FPL-([^-]+)-IS/, '(FPL-' + cs + '-IS');
-            updateVatsimLink();
-        }
-    // Initialize VATSIM link on load
-    updateVatsimLink();
-
-        // Initialize callsign input and hook updates
-        if (csInput && fplTa) {
-            var mcs = (fplTa.value || '').match(/\(FPL-([^-]+)-IS/);
-            if (mcs) csInput.value = (mcs[1] || '').toUpperCase();
-            var csDebounce;
-            csInput.addEventListener('input', function(){
-                var start = this.selectionStart, end = this.selectionEnd;
-                this.value = (this.value || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
-                try { this.setSelectionRange(start, end); } catch(_) {}
-                clearTimeout(csDebounce);
-                var val = this.value;
-                csDebounce = setTimeout(function(){ updateIcaoCallsign(val); }, 200);
-            });
-        }
-
-        // Clickable example callsigns
-        csExamples.forEach(function(tag){
-            tag.addEventListener('click', function(){
-                var val = (this.getAttribute('data-cs') || '').toUpperCase();
-                if (!val) return;
-                if (csInput) { csInput.value = val; }
-                updateIcaoCallsign(val);
-            });
-            tag.setAttribute('role','button');
-            tag.setAttribute('tabindex','0');
-            tag.addEventListener('keydown', function(ev){ if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); this.click(); } });
-        });
-    // Clickable eligible FL tags → set level and sync route from textarea
-    var flTags = document.querySelectorAll('.alt-fl .tag.is-clickable');
-        flTags.forEach(function(tag){
-        tag.addEventListener('click', function(){
-            var txt = (this.textContent || '').trim();
-            var routeStr = routeTa ? routeTa.value.trim() : null;
-            updateIcaoFpl({ newLevelFL: txt, newRoute: routeStr });
-                        // Visual selection
-                        flTags.forEach(function(t){ t.classList.remove('is-active'); });
-                        this.classList.add('is-active');
-                        // Toast
-                        try {
-                            var toast = document.createElement('div');
-                            toast.textContent = 'Level updated to ' + txt;
-                            toast.style.position = 'fixed'; toast.style.right = '16px'; toast.style.bottom = '16px';
-                            toast.style.background = 'rgba(30,30,30,0.92)'; toast.style.color = '#fff'; toast.style.padding = '8px 12px';
-                            toast.style.borderRadius = '6px'; toast.style.zIndex = '9999'; toast.style.fontSize = '0.9rem';
-                            if (document.documentElement.classList.contains('dark')) {
-                                toast.style.background = 'rgba(20,20,20,0.9)'; toast.style.color = '#e8e8e8';
-                            }
-                            document.body.appendChild(toast);
-                            setTimeout(function(){ toast.remove(); }, 1600);
-                        } catch(e) {}
-        });
-        tag.addEventListener('keydown', function(ev){ if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); this.click(); } });
-        tag.setAttribute('role','button');
-        tag.setAttribute('tabindex','0');
-    });
-
-    // When route text changes, update only the route portion of the ICAO FPL
-    if (routeTa) {
-        var debounce;
-        routeTa.addEventListener('input', function(){
-            clearTimeout(debounce);
-            var val = this.value;
-            debounce = setTimeout(function(){ updateIcaoFpl({ newRoute: val }); }, 250);
-        });
-    }
-
-    // UTC clock updater
-    function tickUTC(){
-        try {
-            var now = new Date();
-            var hh = String(now.getUTCHours()).padStart(2,'0');
-            var mm = String(now.getUTCMinutes()).padStart(2,'0');
-            if (utcClockEl) utcClockEl.textContent = hh + ':' + mm + 'Z';
-        } catch(e) {}
-    }
-    tickUTC();
-    setInterval(tickUTC, 1000 * 30);
-
-    // Wire dep time input + Use now
-    if (depTimeInput){
-        // Prefill from current FPL if present
-        (function(){
-            var m = (fplTa.value || '').match(new RegExp('\\n-' + ORIGIN_ICAO + '(\\\n|$|\\d{4})'));
-            var m2 = (fplTa.value || '').match(new RegExp('\\n-' + ORIGIN_ICAO + '(\\d{4})'));
-            if (m2 && m2[1]) depTimeInput.value = m2[1];
-        })();
-        var depDebounce;
-        depTimeInput.addEventListener('input', function(){
-            // enforce digits only
-            var start = this.selectionStart, end = this.selectionEnd;
-            this.value = (this.value || '').replace(/[^0-9]/g,'').slice(0,4);
-            try { this.setSelectionRange(start, end); } catch(_) {}
-            clearTimeout(depDebounce);
-            var v = this.value;
-            depDebounce = setTimeout(function(){ updateIcaoDepTime(v); }, 250);
-        });
-    }
-    if (useNowBtn){
-        useNowBtn.addEventListener('click', function(){
-            var now = new Date();
-            var hh = String(now.getUTCHours()).padStart(2,'0');
-            var mm = String(now.getUTCMinutes()).padStart(2,'0');
-            var v = hh + mm;
-            if (depTimeInput) depTimeInput.value = v;
-            updateIcaoDepTime(v);
-        });
-    }
-})();
-</script>
+    <div class="field is-grouped is-grouped-centered">
+        <div class="control">
+            <a id="vatsim-file-link" class="button is-primary" href="#" target="_blank" rel="noopener">File flight plan on VATSIM</a>
+        </div>
+    </div>

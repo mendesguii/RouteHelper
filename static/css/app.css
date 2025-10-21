@@ -1,0 +1,76 @@
+/* Result page styles extracted from template */
+.alt-fl .tag.is-clickable { cursor: pointer; }
+.alt-fl .tag.is-active { border: 1px solid #2276e3; box-shadow: 0 0 0 2px rgba(34,118,227,0.15) inset; }
+/* Callsign card with subtle ASCII-style background */
+.callsign-card { position: relative; overflow: hidden; }
+.callsign-card .ascii-bg {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.06; color: #2a4b6f;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  white-space: pre; line-height: 1.2; font-size: 16px; transform: rotate(-6deg) scale(1.18);
+}
+.callsign-card .content-wrap { position: relative; z-index: 1; }
+.callsign-card .input { text-transform: uppercase; }
+/* Equal height columns for Callsign / UTC Off-block / Eligible FLs */
+.equal-cols > .column { display: flex; }
+.equal-cols > .column > .box,
+.equal-cols > .column > .notification,
+.equal-cols > .column > .callsign-card { flex: 1 1 auto; display: flex; flex-direction: column; }
+.equal-cols > .column > .box .content-wrap { flex: 1 1 auto; }
+/* Vertically center content inside UTC Off-block card only */
+.utc-box { justify-content: center; }
+
+/* Header-like tag styles for METAR airport labels */
+.airport-tag-origin {
+  color:#a2f5bf; border:1px solid rgba(162,245,191,0.6); background:rgba(162,245,191,0.10);
+}
+.airport-tag-dest {
+  color:#ffcc80; border:1px solid rgba(255,204,128,0.6); background:rgba(255,204,128,0.10);
+}
+
+/* Tokyo Night inspired theme (using Bulma data-theme) */
+[data-theme="dark"] body {
+  background-color: #1a1b26; /* base */
+  color: #c0caf5;            /* foreground */
+}
+[data-theme="dark"] .box,
+[data-theme="dark"] .notification,
+[data-theme="dark"] .message,
+[data-theme="dark"] .dropdown-content {
+  background-color: #24283b; /* panel */
+  border-color: #414868;     /* border */
+}
+[data-theme="dark"] .input,
+[data-theme="dark"] .select select,
+[data-theme="dark"] .textarea {
+  background-color: #24283b;
+  color: #c0caf5;
+  border-color: #414868;
+}
+[data-theme="dark"] ::placeholder { color: #565f89; opacity: 1; }
+[data-theme="dark"] a { color: #7aa2f7; }
+[data-theme="dark"] hr { background: #414868; height: 1px; border: 0; }
+/* Global loading overlay in Tokyo Night */
+[data-theme="dark"] #loading-overlay { background: rgba(26,27,38,0.75); }
+[data-theme="dark"] .loading-card { background: #24283b; color: #c0caf5; box-shadow: 0 8px 28px rgba(0,0,0,0.55); }
+[data-theme="dark"] .spinner { border-color: #414868; border-top-color: #7aa2f7; }
+/* Callsign ASCII overlay tint */
+[data-theme="dark"] .callsign-card .ascii-bg { color: #7aa2f7; opacity: 0.06; }
+
+/* Apply same palette when theme is auto and system is dark */
+@media (prefers-color-scheme: dark) {
+  [data-theme="auto"] body { background-color: #1a1b26; color: #c0caf5; }
+  [data-theme="auto"] .box,
+  [data-theme="auto"] .notification,
+  [data-theme="auto"] .message,
+  [data-theme="auto"] .dropdown-content { background-color: #24283b; border-color: #414868; }
+  [data-theme="auto"] .input,
+  [data-theme="auto"] .select select,
+  [data-theme="auto"] .textarea { background-color: #24283b; color: #c0caf5; border-color: #414868; }
+  [data-theme="auto"] ::placeholder { color: #565f89; opacity: 1; }
+  [data-theme="auto"] a { color: #7aa2f7; }
+  [data-theme="auto"] hr { background: #414868; height: 1px; border: 0; }
+  [data-theme="auto"] #loading-overlay { background: rgba(26,27,38,0.75); }
+  [data-theme="auto"] .loading-card { background: #24283b; color: #c0caf5; box-shadow: 0 8px 28px rgba(0,0,0,0.55); }
+  [data-theme="auto"] .spinner { border-color: #414868; border-top-color: #7aa2f7; }
+  [data-theme="auto"] .callsign-card .ascii-bg { color: #7aa2f7; opacity: 0.06; }
+}

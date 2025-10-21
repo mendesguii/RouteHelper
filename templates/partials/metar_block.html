@@ -2,12 +2,12 @@
   <div class="level">
     <div class="level-left">
       <div class="level-item">
-        <h3 class="subtitle">{{ icao | upper }}</h3>
+  <span class="tag is-light is-small airport-tag-{{ airport_kind or 'origin' }}" title="{{ icao | upper }}">{{ icao | upper }}</span>
       </div>
     </div>
     <div class="level-right">
       <div class="level-item">
-        <button class="button is-small is-light is-rounded"
+  <button class="button is-small is-rounded"
                 hx-get="/metar?icao={{ icao }}"
                 hx-target="#metar-{{ icao }}"
                 hx-swap="outerHTML"

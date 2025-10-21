@@ -1,9 +1,9 @@
 version: '3.8'
 services:
   routehelper:
-    # Use the published image from GitHub Container Registry
-    # Set IMAGE_TAG in your .env to pin a version (default: latest)
-    image: ghcr.io/mendesguii/routehelper:${IMAGE_TAG:-latest}
+    # Build from local Dockerfile to pick up latest app changes
+    build: .
+    image: routehelper:local
     container_name: routehelper-app
     ports:
       - "8000:8000"

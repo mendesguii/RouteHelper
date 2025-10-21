@@ -18,6 +18,6 @@
     id="route-map-iframe"
     title="Route Map"
     style="width: 100%; height: 500px; border: none;"
-    srcdoc='{{ html | replace("'", "&#39;") | safe }}'>
+    srcdoc="{{ html | e }}">
   </iframe>
 </div>

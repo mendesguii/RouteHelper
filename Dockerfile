@@ -22,5 +22,5 @@ EXPOSE 8000
 # Set environment variables for Streamlit
 ENV PYTHONUNBUFFERED=1
 
-# Entrypoint
-CMD ["uvicorn", "main_fastapi:app", "--host", "0.0.0.0", "--port", "8000"]
+# Entrypoint (use new modular app)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

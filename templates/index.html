@@ -1,10 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>RouteHelper Planner</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+{% extends 'base.html' %}
+{% block title %}RouteHelper Planner{% endblock %}
+{% block head_extra %}
     <style>
         /* Collapsible planner: hidden by default after submit, show on hover */
         .planner-wrapper.collapsed .box {
@@ -16,6 +12,13 @@
             transition: height 0.25s ease, opacity 0.25s ease, padding 0.25s ease, margin 0.25s ease;
         }
         .planner-wrapper.collapsed:hover .box {
+            height: auto;
+            opacity: 1;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        /* Keep planner open while user is typing/focused inside */
+        .planner-wrapper.collapsed:focus-within .box {
             height: auto;
             opacity: 1;
             padding: 1.25rem;
@@ -34,26 +37,7 @@
         #origin-menu, #dest-menu { position: relative; }
         #origin-menu .dropdown, #dest-menu .dropdown { position: absolute; width: 100%; z-index: 20; }
         .dropdown-content { max-height: 220px; overflow: auto; }
-        /* Dark mode theme overrides */
-        html.dark, html.dark body { background-color: #121212; color: #e8e8e8; }
-        html.dark .box { background-color: #1e1e1e; color: #e8e8e8; border-color: #2a2a2a; }
-        html.dark .label, html.dark .title, html.dark .subtitle { color: #f0f0f0; }
-        html.dark .input, html.dark .select select, html.dark .textarea { background-color: #222; color: #eee; border-color: #3a3a3a; }
-        html.dark .textarea[readonly] { background-color: #1c1c1c; }
-        html.dark .button.is-light { background-color: #2a2a2a; color: #e8e8e8; border-color: #3a3a3a; }
-        html.dark .dropdown-content { background-color: #1e1e1e; border-color: #2a2a2a; }
-        html.dark .dropdown-item { color: #e8e8e8; }
-        html.dark .dropdown-item:hover { background-color: #2a2a2a; }
-    html.dark .htmx-indicator { color: #aaa; }
-    /* Strong/bold text should be readable in dark */
-    html.dark strong { color: #ffffff; }
-        /* Ensure pre/code blocks are dark-themed (e.g., METAR blocks) */
-        html.dark pre, html.dark code { background-color: #1c1c1c; color: #e8e8e8; border-color: #2a2a2a; }
-        html.dark .box pre { background-color: #1c1c1c; color: #e8e8e8; }
-        /* Links visibility in dark */
-        html.dark a { color: #8ab4f8; }
-        /* Placeholder color */
-        html.dark ::placeholder { color: #b5b5b5; opacity: 1; }
+        /* No custom dark/light overrides: use Bulma defaults */
         /* Global loading overlay */
         #loading-overlay.htmx-indicator { display: none; }
         #loading-overlay {
@@ -69,14 +53,12 @@
             width: 28px; height: 28px; border-radius: 50%; border: 3px solid #dbdbdb; border-top-color: #485fc7; animation: spin 0.9s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        /* Dark mode for loading card */
-        html.dark .loading-card { background: #1e1e1e; color: #e8e8e8; box-shadow: 0 8px 28px rgba(0,0,0,0.6); }
-        html.dark .spinner { border-color: #3a3a3a; border-top-color: #8ab4f8; }
+    /* No dark-specific overrides for loading card */
         /* Force uppercase typing for ICAO fields */
         .uppercase-input { text-transform: uppercase; }
     </style>
-</head>
-<body>
+{% endblock %}
+{% block content %}
 <section class="section">
     <div class="container">
     <div id="planner" class="planner-wrapper">
@@ -93,7 +75,7 @@
                             <span style="color:#ffdd57;" aria-label="Missing" title="cycle.json not found">?</span>
                         {% endif %}
                     </div>
-                    <button id="theme-toggle" class="button is-small is-light" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+                    <button id="theme-toggle" class="button is-small" type="button" title="Toggle theme" aria-label="Toggle theme">
                         <span id="theme-icon" aria-hidden="true">🌙</span>
                     </button>
                 </div>
@@ -210,30 +192,6 @@
         document.body.addEventListener('htmx:responseError', function(){ overlay.style.display = 'none'; });
     })();
     // Keep planner collapsed after planning; reveal only on hover
-    // Theme toggle with persistence
-    (function(){
-        var root = document.documentElement;
-        var btn = document.getElementById('theme-toggle');
-        var icon = document.getElementById('theme-icon');
-        var mql = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
-        function applyTheme(theme){
-            var isDark = (theme === 'dark') || (theme === 'auto' && mql && mql.matches);
-            if (isDark) root.classList.add('dark'); else root.classList.remove('dark');
-            if (icon) icon.textContent = theme === 'auto' ? '🖥️' : (isDark ? '☀️' : '🌙');
-        }
-        function savedTheme(){ return localStorage.getItem('theme') || 'auto'; }
-        function setTheme(theme){ localStorage.setItem('theme', theme); applyTheme(theme); }
-        applyTheme(savedTheme());
-        if (mql && mql.addEventListener) { mql.addEventListener('change', function(){ if (savedTheme()==='auto') applyTheme('auto'); }); }
-        else if (mql && mql.addListener) { mql.addListener(function(){ if (savedTheme()==='auto') applyTheme('auto'); }); }
-        if (btn) btn.addEventListener('click', function(){
-            var current = savedTheme();
-            var next = current === 'light' ? 'dark' : (current === 'dark' ? 'auto' : 'light');
-            setTheme(next);
-            btn.title = 'Theme: ' + next;
-        });
-        btn.title = 'Theme: ' + savedTheme();
-    })();
     // Close suggestion menus on blur or Escape
     function closeMenu(id){ var el = document.getElementById(id); if (el) { var dd = el.querySelector('.dropdown'); if (dd) dd.classList.remove('is-active'); el.innerHTML = ''; } }
     ['origin-input', 'dest-input'].forEach(function(inputId){
@@ -250,5 +208,4 @@
         el.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') { closeMenu(inputId.replace('-input','-menu')); } });
     });
 </script>
-</body>
-</html>
+{% endblock %}
