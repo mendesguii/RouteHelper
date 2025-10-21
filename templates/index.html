@@ -72,6 +72,8 @@
         /* Dark mode for loading card */
         html.dark .loading-card { background: #1e1e1e; color: #e8e8e8; box-shadow: 0 8px 28px rgba(0,0,0,0.6); }
         html.dark .spinner { border-color: #3a3a3a; border-top-color: #8ab4f8; }
+        /* Force uppercase typing for ICAO fields */
+        .uppercase-input { text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -102,7 +104,7 @@
                     <div class="field">
                         <label class="label">Origin ICAO</label>
                         <div class="control">
-                <input id="origin-input" class="input" type="text" name="origin" autocomplete="off" required
+                <input id="origin-input" class="input uppercase-input" type="text" name="origin" autocomplete="off" required
                     hx-get="/icao_suggest" hx-trigger="keyup changed delay:150ms" 
                     hx-target="#origin-menu" hx-indicator="#origin-indicator"
                     hx-params="origin,mode,input_id,target_id,limit"
@@ -116,7 +118,7 @@
                     <div class="field">
                         <label class="label">Destination ICAO</label>
                         <div class="control">
-                <input id="dest-input" class="input" type="text" name="dest" autocomplete="off" required
+                <input id="dest-input" class="input uppercase-input" type="text" name="dest" autocomplete="off" required
                     hx-get="/icao_suggest" hx-trigger="keyup changed delay:150ms"
                     hx-target="#dest-menu" hx-indicator="#dest-indicator"
                     hx-params="dest,mode,input_id,target_id,limit"
@@ -182,7 +184,7 @@
     </div>
 </section>
 <!-- Global loading overlay shown while planning route -->
-<div id="loading-overlay" class="htmx-indicator" role="status" aria-live="polite" aria-label="Loading">
+<div id="loading-overlay" class="htmx-indicator" role="status" aria-live="polite" aria-label="Loading" style="display:none;">
     <div class="loading-card">
         <div class="spinner" aria-hidden="true"></div>
         <div>
@@ -199,6 +201,14 @@
             planner.classList.add('collapsed');
         }
     });
+    // Show a global loading overlay during any htmx request
+    (function(){
+        var overlay = document.getElementById('loading-overlay');
+        if (!overlay) return;
+        document.body.addEventListener('htmx:beforeRequest', function(){ overlay.style.display = 'flex'; });
+        document.body.addEventListener('htmx:afterRequest', function(){ overlay.style.display = 'none'; });
+        document.body.addEventListener('htmx:responseError', function(){ overlay.style.display = 'none'; });
+    })();
     // Keep planner collapsed after planning; reveal only on hover
     // Theme toggle with persistence
     (function(){
@@ -229,6 +239,13 @@
     ['origin-input', 'dest-input'].forEach(function(inputId){
         var el = document.getElementById(inputId);
         if (!el) return;
+        // Force value to uppercase as the user types so submitted values are uppercase too
+        el.addEventListener('input', function(){
+            var start = this.selectionStart, end = this.selectionEnd;
+            this.value = (this.value || '').toUpperCase();
+            // Restore caret position where possible
+            try { this.setSelectionRange(start, end); } catch(_) {}
+        });
         el.addEventListener('blur', function(){ setTimeout(function(){ closeMenu(inputId.replace('-input','-menu')); }, 150); });
         el.addEventListener('keydown', function(ev){ if (ev.key === 'Escape') { closeMenu(inputId.replace('-input','-menu')); } });
     });

@@ -1,10 +1,43 @@
 <div class="box">
+    <!-- Header: ORIGIN ✈ DEST inside its own box with tag design -->
+    <div class="box" style="margin-bottom:1rem;">
+        <div class="is-flex is-justify-content-center is-align-items-center" style="gap:1rem; flex-wrap:wrap;">
+            <span class="tag is-light is-large" title="Origin"
+                  style="color:#a2f5bf; border:1px solid rgba(162,245,191,0.6); background:rgba(162,245,191,0.10);">
+                {{ origin }}
+            </span>
+            <span class="tag is-medium" aria-hidden="true"
+                  style="background:transparent; border:none; color:#cfd8dc; font-size:1.25rem;">✈</span>
+            <span class="tag is-light is-large" title="Destination"
+                  style="color:#ffcc80; border:1px solid rgba(255,204,128,0.6); background:rgba(255,204,128,0.10);">
+                {{ dest }}
+            </span>
+        </div>
+    </div>
+    
     <h2 class="subtitle">Loadsheet <span>🧾</span></h2>
-    <div class="columns">
-        <div class="column">Total Traffic Load (kg): <strong>{{ ttl or 'N/A' }}</strong></div>
-        <div class="column">Take Off Fuel (kg): <strong>{{ tof or 'N/A' }}</strong></div>
-        <div class="column">SI Block Time: <strong>{{ blk or 'N/A' }}</strong></div>
-        <div class="column">Endurance: <strong>{{ endurance or 'N/A' }}</strong></div>
+    <!-- Summary bar: 5 items evenly distributed -->
+    <div class="columns is-mobile is-multiline" style="text-align:center;">
+        <div class="column is-one-fifth">
+            <div class="is-size-7 has-text-grey">Total Traffic Load (kg)</div>
+            <div class="is-size-5"><strong>{{ ttl or 'N/A' }}</strong></div>
+        </div>
+        <div class="column is-one-fifth">
+            <div class="is-size-7 has-text-grey">Takeoff Fuel (kg)</div>
+            <div class="is-size-5"><strong>{{ tof or 'N/A' }}</strong></div>
+        </div>
+        <div class="column is-one-fifth">
+            <div class="is-size-7 has-text-grey">SI Block</div>
+            <div class="is-size-5"><strong>{{ blk or 'N/A' }}</strong></div>
+        </div>
+        <div class="column is-one-fifth">
+            <div class="is-size-7 has-text-grey">Endurance</div>
+            <div class="is-size-5"><strong>{{ endurance or 'N/A' }}</strong></div>
+        </div>
+        <div class="column is-one-fifth">
+            <div class="is-size-7 has-text-grey">TC</div>
+            <div class="is-size-5"><strong>{{ tc or 'N/A' }}</strong></div>
+        </div>
     </div>
     <details>
         <summary>Raw loadsheet text</summary>

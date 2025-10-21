@@ -2,6 +2,11 @@
   <div class="level" style="margin-bottom: .5rem;">
     <div class="level-left">
       <div class="level-item"><h3 class="subtitle" style="margin: 0;">Route Map</h3></div>
+      {% if total_distance_nm %}
+      <div class="level-item">
+        <span class="tag is-info is-light" title="Approximate total distance">Total: {{ total_distance_nm }} nm</span>
+      </div>
+      {% endif %}
     </div>
     <div class="level-right">
       <div class="level-item">

@@ -3,6 +3,7 @@ import logging
 import requests
 import os
 import re
+import math
 from bs4 import BeautifulSoup
 from typing import Optional
 from dotenv import load_dotenv
@@ -145,6 +146,17 @@ class RouteHelper:
         return soup.text
 
     # (map helpers moved to FastAPI layer)
+    # Geometry helpers
+    @staticmethod
+    def haversine_nm(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+        """Approximate great-circle distance between two points in nautical miles."""
+        R_nm = 3440.065  # Earth radius in nautical miles
+        phi1, phi2 = math.radians(lat1), math.radians(lat2)
+        dphi = math.radians(lat2 - lat1)
+        dlmb = math.radians(lon2 - lon1)
+        a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlmb / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return R_nm * c
     # Map data loading helpers (file I/O centralized here)
     def load_fix_index(self) -> dict:
         """Load and cache fix coordinates from earth_fix.dat under DATA_PATH.
