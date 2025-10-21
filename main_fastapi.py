@@ -69,6 +69,39 @@ def plan_route(request: Request,
         route_list, route_text = ([], f"Error: {e}")
     # SID/STAR (non-mutating inference)
     sid_text, star_text = helper.infer_sid_star(origin_u, dest_u, route_list)
+    # Altitude suggestion based on semicircular IFR rule and requested FL range
+    # Use TC (track/course) text from loadsheet when available, e.g., "123 (EAST)" or "278 (WEST)"
+    tc_up = ((tc_val or "").strip()).upper()
+    if "EAST" in tc_up:
+        direction_label = "eastbound"
+    elif "WEST" in tc_up:
+        direction_label = "westbound"
+    else:
+        direction_label = "unknown"
+
+    eastbound = True if direction_label == "eastbound" else (False if direction_label == "westbound" else None)
+    rule_label = "IFR semicircular: eastbound odd FLs, westbound even FLs"
+    # build candidate FLs within requested range
+    try:
+        fl_lo = int(fl_start)
+        fl_hi = int(fl_end)
+    except Exception:
+        fl_lo, fl_hi = 100, 450
+    if fl_lo > fl_hi:
+        fl_lo, fl_hi = fl_hi, fl_lo
+    rng = [fl for fl in range(max(100, fl_lo), min(450, fl_hi) + 1, 10)]
+    def is_odd_fl(fl: int) -> bool:
+        return ((fl // 10) % 2) == 1  # FL350 -> 35 -> odd
+    if direction_label == "unknown":
+        # Direction unknown: do not present any eligible levels
+        filtered = []
+    else:
+        want_odd = bool(eastbound)
+        filtered = [fl for fl in rng if is_odd_fl(fl) == want_odd]
+        if not filtered:
+            filtered = rng
+    # Also prepare the list of eligible FLs to present to the user
+    eligible_fls = [f"FL{fl}" for fl in filtered]
     # METARs (non-mutating)
     try:
         metar_origin = helper.fetch_metar(origin_u) or "No METAR found."
@@ -81,7 +114,9 @@ def plan_route(request: Request,
     # ICAO FPL
     route_str = ' '.join(route_list) if route_list else ''
     si_block_time = (parsed.get('times', {}) or {}).get('block_time', '')
+    endurance_time = (parsed.get('times', {}) or {}).get('time_to_empty', '')
     eet = si_block_time.replace(':', '') if si_block_time else ''
+    endur = endurance_time.replace(':', '') if endurance_time else ''
     msg = RouteHelper.build_vatsim_icao_fpl(
         callsign="XXXXXX",
         actype=plane,
@@ -95,6 +130,7 @@ def plan_route(request: Request,
         route=route_str,
         dest_icao=dest_u,
         eet=eet,
+    endurance_hhmm='',
         alt1="",
         alt2="",
         pbn="A1B1D1O1S2",
@@ -129,6 +165,9 @@ def plan_route(request: Request,
         "metar_origin": metar_origin,
         "metar_dest": metar_dest,
         "icao_fpl": msg,
+    "eligible_fls": eligible_fls,
+    "altitude_rule": rule_label,
+    "route_direction": direction_label,
         "route_map": "",
         "aircraft_options": AIRCRAFT_OPTIONS,
         "default_fl_start": DEFAULT_FL_START,

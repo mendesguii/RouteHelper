@@ -26,6 +26,7 @@ class RouteHelper:
         route: str,
         dest_icao: str,
         eet: str,
+        endurance_hhmm: str = '',
         alt1: str = '',
         alt2: str = '',
         pbn: str = '',
@@ -40,30 +41,35 @@ class RouteHelper:
         per: str = '',
         rmk: str = ''
     ) -> str:
-        # Compose the ICAO FPL message as a single line, as per user request
-        # Only include fields that are not empty, in the correct order
-        parts = [
-            f"(FPL-{callsign}-IS",
-            f"-{actype}/{wakecat}-{equipment}{surveillance}",
-            f"-{dep_icao}{dep_time}",
-            f"-{speed}{level} {route}".strip(),
-            f"-{dest_icao}{eet} {alt1} {alt2}".strip(),
-        ]
-        # Optional fields, only if not empty
-        if pbn: parts.append(f"-PBN/{pbn}")
-        if nav: parts.append(f"NAV/{nav}")
-        if rnp: parts.append(f"RNP{rnp}")
-        if dof: parts.append(f"DOF/{dof}")
-        if reg: parts.append(f"REG/{reg}")
-        if eet: parts.append(f"EET/{eet}")
-        if sel: parts.append(f"SEL/{sel}")
-        if code: parts.append(f"CODE/{code}")
-        if rvr: parts.append(f"RVR/{rvr}")
-        if opr: parts.append(f"OPR/{opr}")
-        if per: parts.append(f"PER/{per}")
-        if rmk: parts.append(f"RMK/{rmk}")
-        # Join all with spaces, close with )
-        return ' '.join([p for p in parts if p.strip()]) + ")"
+        # Compose the ICAO FPL message as multiline, mirroring the provided working example
+        lines: list[str] = []
+        lines.append(f"(FPL-{callsign}-IS")
+        lines.append(f"-{actype}/{wakecat}-{equipment}{surveillance}")
+        lines.append(f"-{dep_icao}{dep_time}")
+        route_part = (" " + route.strip()) if route and route.strip() else ""
+        lines.append(f"-{speed}{level}{route_part}")
+        alt1_part = f" {alt1.strip()}" if alt1 and alt1.strip() else ""
+        alt2_part = f" {alt2.strip()}" if alt2 and alt2.strip() else ""
+        lines.append(f"-{dest_icao}{eet}{alt1_part}{alt2_part}")
+        # Build a single other-info line where only the first token starts with '-'
+        other_tokens: list[str] = []
+        if pbn: other_tokens.append(f"PBN/{pbn}")
+        if nav: other_tokens.append(f"NAV/{nav}")
+        if rnp: other_tokens.append(f"RNP{rnp}")
+        if dof: other_tokens.append(f"DOF/{dof}")
+        # Endurance removed per user request
+        if reg: other_tokens.append(f"REG/{reg}")
+        if sel: other_tokens.append(f"SEL/{sel}")
+        if code: other_tokens.append(f"CODE/{code}")
+        if rvr: other_tokens.append(f"RVR/{rvr}")
+        if opr: other_tokens.append(f"OPR/{opr}")
+        if per: other_tokens.append(f"PER/{per}")
+        if rmk: other_tokens.append(f"RMK/{rmk}")
+        if other_tokens:
+            lines.append("-" + " ".join(other_tokens))
+        # Close on last line
+        lines[-1] = lines[-1] + ")"
+        return "\n".join(lines)
     """Class to encapsulate route planning logic and state."""
     def __init__(self, env_path='.env'):
         # Basic logging (INFO by default so raw response shows up)
