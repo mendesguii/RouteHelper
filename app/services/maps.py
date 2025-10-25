@@ -36,9 +36,12 @@ def build_route_map_html(
     """Build a folium map HTML and compute total distance over legs.
 
     theme: 'light' | 'dark' | 'auto' | None
+    - Default behavior: treat 'auto'/None as dark tiles (map defaults to dark).
+      Only when theme is explicitly 'light' do we use light tiles.
     """
     theme = (theme or 'auto').lower()
-    tiles_name = 'CartoDB dark_matter' if theme == 'dark' else 'CartoDB positron'
+    # Default map theme is dark. Use light tiles only if explicitly requested.
+    tiles_name = 'CartoDB positron' if theme == 'light' else 'CartoDB dark_matter'
     m = folium.Map(location=[0, 0], zoom_start=2, tiles=tiles_name)
 
     points: List[Tuple[float, float]] = []
