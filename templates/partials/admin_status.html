@@ -1,0 +1,47 @@
+<div class="content">
+  {% if notice %}
+    <div class="notification {% if notice.kind=='success' %}is-success{% elif notice.kind=='warning' %}is-warning{% elif notice.kind=='danger' %}is-danger{% else %}is-info{% endif %}">
+      {{ notice.text }}
+    </div>
+  {% endif %}
+  <h3 class="is-flex is-align-items-center" style="gap:.5rem;">Status
+    {% if airac and airac.cycle %}
+      <span class="tag is-info">AIRAC {{ airac.cycle }}</span>
+    {% else %}
+      <span class="tag is-warning">AIRAC unknown</span>
+    {% endif %}
+  </h3>
+  <div class="columns is-multiline">
+    <div class="column is-one-quarter">
+      <div class="box has-text-centered">
+        <p class="heading">Airports</p>
+        <p class="title is-4">{{ counts.airports or 0 }}</p>
+      </div>
+    </div>
+    <div class="column is-one-quarter">
+      <div class="box has-text-centered">
+        <p class="heading">Fixes</p>
+        <p class="title is-4">{{ counts.fixes or 0 }}</p>
+      </div>
+    </div>
+    <div class="column is-one-quarter">
+      <div class="box has-text-centered">
+        <p class="heading">Airways</p>
+        <p class="title is-4">{{ counts.airways or 0 }}</p>
+      </div>
+    </div>
+    <div class="column is-one-quarter">
+      <div class="box has-text-centered">
+        <p class="heading">Procedures</p>
+        <p class="title is-4">{{ counts.procedures or 0 }}</p>
+      </div>
+    </div>
+    <div class="column is-one-quarter">
+      <div class="box has-text-centered">
+        <p class="heading">Flights</p>
+        <p class="title is-4">{{ counts.flights or 0 }}</p>
+      </div>
+    </div>
+  </div>
+  <p class="is-size-7 has-text-grey">Use the buttons above to (re)index navdata as AIRAC changes.</p>
+</div>

@@ -9,11 +9,17 @@ services:
       - "8000:8000"
     volumes:
       - "${DATA_PATH}:/data:ro"
+      - routehelper_db:/var/lib/routehelper
     env_file:
       - .env
     environment:
       # Inside the container, point the app to the mounted path
       - DATA_PATH=/data
+      - DB_DIR=/var/lib/routehelper
+      # Alternatively set DATABASE_URL to a Postgres/MySQL URL
+      # - DATABASE_URL=postgresql+psycopg://user:pass@db/routehelper
       - PYTHONUNBUFFERED=1
     restart: unless-stopped
+volumes:
+  routehelper_db:
 # Add more services (e.g., db, reverse proxy) as needed

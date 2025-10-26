@@ -24,9 +24,9 @@ def load_fix_index() -> Dict[str, Tuple[float, float]]:
                 try:
                     lat = float(parts[0])
                     lon = float(parts[1])
-                    name = parts[-1].upper()
-                    if name and name not in index:
-                        index[name] = (lat, lon)
+                    ident = parts[2].upper()
+                    if ident and ident not in index:
+                        index[ident] = (lat, lon)
                 except Exception:
                     continue
     except FileNotFoundError:

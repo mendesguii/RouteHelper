@@ -7,3 +7,4 @@ beautifulsoup4>=4.12
 python-dotenv>=1.0
 folium>=0.16
 python-multipart>=0.0.9
+SQLAlchemy>=2.0

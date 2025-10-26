@@ -55,3 +55,17 @@ python .\main.py EHAM/LEBL ROUTE A320
 - ICAO suggestions are based on listing `.dat` files under `DATA_PATH/CIFP` (fallback to `DATA_PATH`).
 - The route map uses fixes from `earth_fix.dat` if present.
 
+## Database and Indexing
+
+This project stores navdata and generated flights in a database (default: SQLite).
+
+When running with Docker Compose, a named volume `routehelper_db` persists the SQLite file at `/var/lib/routehelper/routehelper.db`.
+
+API endpoints:
+
+- `POST /admin/init` — create tables.
+- `POST /admin/index?force=false` — parse navdata files from `DATA_PATH` and index Fixes, Airports, Airways, and AIRAC info. Run this after AIRAC updates.
+- `GET /admin/status` — show counts and the last indexed AIRAC.
+
+You can override the database with `DATABASE_URL` (e.g., Postgres) or set `DB_DIR` when using SQLite.
+

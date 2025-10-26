@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Admin · RouteHelper{% endblock %}
+{% block content %}
+<section class="section">
+  <div class="container">
+    <div class="is-flex is-justify-content-space-between is-align-items-center" style="gap:.75rem;">
+      <h1 class="title">Admin</h1>
+      <a href="/" class="button is-light">Back to Planner</a>
+    </div>
+
+    <div class="box">
+      <div class="buttons is-align-items-center" style="gap:.75rem; flex-wrap: wrap;">
+  <button class="button is-link"
+    hx-post="/admin/init_view"
+    hx-target="#admin-status"
+    hx-swap="outerHTML"
+    hx-indicator="#admin-busy">Initialize Tables</button>
+  <button class="button is-primary"
+    hx-post="/admin/index_view"
+    hx-target="#admin-status"
+    hx-swap="outerHTML"
+    hx-indicator="#admin-busy">Index Navdata</button>
+  <button class="button is-warning"
+    title="Clear Airports/Fixes and reingest; update AIRAC"
+    hx-post="/admin/index_view?force=true"
+    hx-target="#admin-status"
+    hx-swap="outerHTML"
+    hx-indicator="#admin-busy">Force Reindex</button>
+  <span id="admin-busy" class="htmx-indicator tag is-light is-medium">Working…</span>
+      </div>
+      <div id="admin-status">
+  {% include 'partials/admin_status.html' %}
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+/* Show indicator only during HTMX requests on linked buttons */
+#admin-busy { display: none; }
+.htmx-request #admin-busy,
+#admin-busy.htmx-request { display: inline-flex; align-items: center; }
+</style>
+{% endblock %}

@@ -1,46 +1,6 @@
-import os
-import re
 from typing import Tuple, List, Dict
-from dotenv import load_dotenv
-
-load_dotenv()
-
-
-def _data_path() -> str:
-    return os.getenv('DATA_PATH', '.')
-
-
-def _read_procedure_file(name_or_path: str) -> Dict[str, List[str]]:
-    """Return dict with lists: {'sids': [], 'stars': [], 'apps': [], 'rwys': []}.
-
-    If name_or_path is a file, use it; else treat as ICAO and search:
-    1) DATA_PATH/CIFP/<ICAO>.dat  2) DATA_PATH/<ICAO>.dat
-    """
-    sids: List[str] = []
-    stars: List[str] = []
-    apps: List[str] = []
-    rwys: List[str] = []
-
-    if os.path.isfile(name_or_path):
-        resolved = name_or_path
-    else:
-        icao = os.path.basename(name_or_path).split('.')[0]
-        candidate_cifp = os.path.join(_data_path(), 'CIFP', f'{icao}.dat')
-        candidate_root = os.path.join(_data_path(), f'{icao}.dat')
-        resolved = candidate_cifp if os.path.isfile(candidate_cifp) else candidate_root
-
-    with open(resolved, 'r', encoding='utf-8') as f:
-        for line in f:
-            if 'SID:' in line:
-                sids.append(line)
-            elif 'STAR' in line:
-                stars.append(line)
-            elif 'APPCH' in line:
-                apps.append(line)
-            elif 'RWY' in line:
-                rwys.append(line)
-
-    return {'sids': sids, 'stars': stars, 'apps': apps, 'rwys': rwys}
+from sqlalchemy.orm import Session
+from app.utils.dbnav import get_procedure_texts_db
 
 
 def _clean_dictionary(obj_dict: Dict[str, str], proc_type: str) -> None:
@@ -96,21 +56,19 @@ def search_in_dict_text(obj_dict: Dict[str, str], value: str) -> str:
     return '\n'.join(lines).strip()
 
 
-def infer_sid_star(origin: str, dest: str, route_list: List[str]) -> Tuple[str, str]:
-    """Infer SID/STAR text based on first/last fixes of route_list."""
+def infer_sid_star(db: Session, origin: str, dest: str, route_list: List[str]) -> Tuple[str, str]:
+    """Infer SID/STAR text based on first/last fixes of route_list using DB procedures."""
     sid_text = "No SID fix found."
     star_text = "No STAR fix found."
     try:
         if origin and route_list:
-            data = _read_procedure_file(origin)
-            sid_dict = structure_data(data['sids'])
+            sid_dict = get_procedure_texts_db(db, origin, kind='SID')
             sid_text = search_in_dict_text(sid_dict, route_list[0]) or sid_text
     except Exception as e:
         sid_text = f"Error: {e}"
     try:
         if dest and route_list:
-            data = _read_procedure_file(dest)
-            star_dict = structure_data(data['stars'])
+            star_dict = get_procedure_texts_db(db, dest, kind='STAR')
             star_text = search_in_dict_text(star_dict, route_list[-1]) or star_text
     except Exception as e:
         star_text = f"Error: {e}"
